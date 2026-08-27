@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "skills": {
+    "frontend-design": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "skillPath": "skills/frontend-design/SKILL.md",
+      "computedHash": "4eabc66183767153e404b39d1b839b1c37f2d82d86f0a0d7e880a579d8d62336"
+    },
+    "laravel-inertia-react": {
+      "source": "asyrafhussin/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/laravel-inertia-react/SKILL.md",
+      "computedHash": "b05144f7f9df5fd3cd03ce13cba822ac61970449fdf7c4c4208684258e8b1724"
+    },
+    "laravel-security": {
+      "source": "affaan-m/ecc",
+      "sourceType": "github",
+      "skillPath": "skills/laravel-security/SKILL.md",
+      "computedHash": "37312e1d7d543c7e0b926c74c4bde87cb95300d7c8549e0a3974c9c44a34a84c"
+    }
+  }
+}

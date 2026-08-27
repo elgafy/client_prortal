@@ -3,6 +3,8 @@
 ## Product Requirements Document
 
 **Version:** 1.0
+**Project Name:** Gafy Studio Clients Portal
+**Project URL:** https://portal.gafystudio.com
 **Status:** Ready for AI-assisted development
 **Application Type:** Internal web application with client portal
 **Backend:** Laravel
