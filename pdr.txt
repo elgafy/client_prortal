@@ -1,0 +1,2392 @@
+# Client Projects & Payments
+
+## Product Requirements Document
+
+**Version:** 1.0
+**Status:** Ready for AI-assisted development
+**Application Type:** Internal web application with client portal
+**Backend:** Laravel
+**Frontend:** React + Inertia
+**Database:** SQLite
+**Authentication:** Laravel authentication
+**Currency Conversion:** None
+**Accounting Integration:** None
+**Payment Gateway:** None
+**Mobile App:** None
+
+---
+
+# 1. Product Overview
+
+Build a very simple web application for managing:
+
+```text
+Clients
+    ↓
+Projects
+    ↓
+Payments
+    ↓
+Outstanding Balance
+    ↓
+Client Account Statement
+```
+
+The application's primary purpose is to answer:
+
+> **How much has this client been charged, how much have they paid, and how much do they still owe?**
+
+The application should be intentionally simple.
+
+It is **not**:
+
+* An accounting system
+* An invoicing system
+* A CRM
+* A task management system
+* A time tracking system
+* A full project management platform
+
+Projects are simply financial/project records belonging to a client.
+
+---
+
+# 2. Core Business Model
+
+Each client has:
+
+* Basic contact information
+* A default currency
+* Projects
+* Payments
+* Account balance
+
+A project has:
+
+* Name
+* Description
+* Optional link
+* Amount
+
+A payment has:
+
+* Amount
+* Currency
+* Date
+* Payment method
+* Received/recorded by
+* Optional project assignment
+* Optional note
+
+The client's account balance is calculated from the client's projects and payments.
+
+---
+
+# 3. Most Important Financial Rule
+
+A payment does **not** have to belong to a project.
+
+There are two types of payments.
+
+## 3.1 Project Payment
+
+A payment can be assigned to a specific project.
+
+Example:
+
+```text
+Project A = $5,000
+
+Payment:
+$2,000
+Assigned to Project A
+```
+
+The project has:
+
+```text
+Paid:        $2,000
+Remaining:   $3,000
+```
+
+## 3.2 Account Payment
+
+A payment can be unassigned.
+
+Example:
+
+```text
+Project A = $5,000
+Project B = $3,000
+
+Total Projects = $8,000
+
+Payment 1 = $4,000
+Payment 2 = $2,000
+
+Neither payment assigned to a project.
+
+Total Paid = $6,000
+
+Outstanding = $8,000 - $6,000
+            = $2,000
+```
+
+This is the most important accounting rule in the application.
+
+---
+
+# 4. Client Account Balance
+
+The authoritative client balance is:
+
+```text
+Total Project Amounts
+-
+Total Client Payments
+=
+Outstanding Amount
+```
+
+Where:
+
+```text
+Total Project Amounts
+=
+sum of all project amounts belonging to the client
+```
+
+and:
+
+```text
+Total Client Payments
+=
+sum of all payments belonging to the client
+```
+
+Payment/project assignment does **not** change the total client balance.
+
+It only provides additional information about how a payment was intended to be applied.
+
+---
+
+# 5. Currency Rule
+
+Each client has a **default account currency**.
+
+Example:
+
+```text
+Client:
+ABC Company
+
+Default Currency:
+USD
+```
+
+When creating a payment:
+
+```text
+Currency:
+USD
+```
+
+should be selected automatically.
+
+The user may change the currency for a particular payment.
+
+---
+
+# 6. Important Currency Limitation
+
+There is **no currency conversion**.
+
+Therefore, the system must not silently add amounts from different currencies.
+
+Example:
+
+```text
+Client currency: USD
+
+Projects:
+$10,000 USD
+
+Payments:
+$5,000 USD
+```
+
+Balance:
+
+```text
+$5,000 USD
+```
+
+But if the client has:
+
+```text
+Project: $10,000 USD
+Payment: €2,000 EUR
+```
+
+the application cannot mathematically calculate a single USD balance without conversion.
+
+Therefore, the system must handle mixed-currency situations explicitly.
+
+Recommended rule:
+
+### Default behavior
+
+A client's projects and payments should normally use the client's default currency.
+
+If a payment is recorded in another currency, the system should show it separately and flag:
+
+> **Multiple currencies — balance cannot be calculated across currencies.**
+
+Do **not** invent or automatically use an exchange rate.
+
+---
+
+# 7. Client Data
+
+Client fields are intentionally minimal.
+
+```text
+id
+name
+company_name
+email
+mobile
+address
+currency
+status
+created_at
+updated_at
+```
+
+## Status
+
+Only:
+
+```text
+Active
+Archived
+```
+
+Archiving should hide the client from normal active lists without deleting historical data.
+
+---
+
+# 8. Project Data
+
+A project contains:
+
+```text
+id
+client_id
+name
+description
+link
+amount
+currency
+status
+created_at
+updated_at
+```
+
+## Required fields
+
+* Client
+* Name
+* Amount
+* Currency
+
+## Optional fields
+
+* Description
+* Link
+
+---
+
+# 9. Project Status
+
+Keep status extremely simple:
+
+```text
+Active
+Completed
+Cancelled
+```
+
+Default:
+
+```text
+Active
+```
+
+A cancelled project should not normally contribute to the client's outstanding balance.
+
+Therefore:
+
+```text
+Outstanding Projects
+=
+Active + Completed projects
+```
+
+Cancelled projects should be excluded.
+
+However, the application should preserve cancelled project records for history.
+
+---
+
+# 10. Project Amount
+
+Each project has one total amount.
+
+Example:
+
+```text
+Website Design
+$3,500 USD
+```
+
+There is no need for:
+
+* Project line items
+* Tasks
+* Milestones
+* Hours
+* Budgets
+* Expenses
+* Profit calculations
+
+Keep the project financially simple.
+
+---
+
+# 11. Payment Data
+
+Payment fields:
+
+```text
+id
+client_id
+project_id nullable
+amount
+currency
+payment_date
+method
+received_from
+received_by
+note nullable
+created_at
+updated_at
+```
+
+## Payment Method
+
+The initial predefined methods are:
+
+```text
+Money Transfer
+Handed
+Check
+```
+
+The system should allow additional methods to be added later through settings if needed.
+
+---
+
+# 12. Payment Assignment
+
+`project_id` is nullable.
+
+This is deliberate.
+
+Example:
+
+```text
+Payment #001
+Client: ABC
+Amount: $5,000
+Project: Website
+```
+
+versus:
+
+```text
+Payment #002
+Client: ABC
+Amount: $5,000
+Project: None
+```
+
+The second payment is an account-level payment.
+
+---
+
+# 13. Payment Validation
+
+A payment assigned to a project must belong to the same client.
+
+Invalid:
+
+```text
+Payment Client: Client A
+Payment Project: Project belonging to Client B
+```
+
+The backend must reject this.
+
+The frontend must never be trusted to enforce this relationship.
+
+---
+
+# 14. Payment Overpayment
+
+The system should allow payments that exceed the current outstanding amount.
+
+Example:
+
+```text
+Projects:
+$5,000
+
+Payments:
+$6,000
+
+Result:
+Credit = $1,000
+```
+
+Do not force the user to artificially assign the extra $1,000 to a project.
+
+The client account should show:
+
+```text
+Outstanding: $0
+Credit: $1,000
+```
+
+This is preferable to showing a negative outstanding balance.
+
+The underlying calculation remains:
+
+```text
+Net Balance = Projects - Payments
+```
+
+but the UI represents negative balance as client credit.
+
+---
+
+# 15. Project Payment Information
+
+If payments are assigned to a project, the project detail page should show:
+
+```text
+Project Amount       $10,000
+Assigned Payments     $6,000
+Project Balance       $4,000
+```
+
+However, this is **informational only**.
+
+Unassigned client payments are not automatically allocated to the project.
+
+Example:
+
+```text
+Project A = $10,000
+Project B = $10,000
+
+Assigned Payment:
+$5,000 → Project A
+
+Unassigned Payment:
+$10,000 → Client Account
+```
+
+Project A:
+
+```text
+Amount:       $10,000
+Assigned:      $5,000
+Project view:  $5,000 remaining
+```
+
+Client account:
+
+```text
+Total Projects: $20,000
+Total Payments: $15,000
+Outstanding:     $5,000
+```
+
+---
+
+# 16. Client Account Summary
+
+Every client should have a clear financial summary.
+
+Example:
+
+```text
+CLIENT ACCOUNT
+
+ABC Company
+
+Total Projects
+$25,000
+
+Total Payments
+$17,000
+
+Outstanding
+$8,000
+```
+
+If there is credit:
+
+```text
+Total Projects
+$25,000
+
+Total Payments
+$27,000
+
+Outstanding
+$0
+
+Credit
+$2,000
+```
+
+---
+
+# 17. Client Dashboard
+
+Client detail page should contain:
+
+### Client Information
+
+```text
+Name
+Company
+Email
+Mobile
+Address
+Default Currency
+```
+
+### Financial Summary
+
+```text
+Total Projects
+Total Paid
+Outstanding
+Credit
+```
+
+### Projects
+
+Table:
+
+```text
+Project
+Amount
+Assigned Paid
+Project Balance
+Status
+```
+
+### Payments
+
+Table:
+
+```text
+Date
+Amount
+Currency
+Method
+Project
+Received By
+```
+
+---
+
+# 18. Internal Dashboard
+
+The internal dashboard should remain simple.
+
+Show:
+
+```text
+Total Active Clients
+Active Projects
+Total Project Value
+Total Payments
+Total Outstanding
+```
+
+And a small section:
+
+```text
+Clients With Outstanding Balance
+```
+
+Example:
+
+```text
+ABC Company       $8,000
+XYZ Company       $3,500
+Example Ltd       $1,200
+```
+
+Clicking a client opens their account.
+
+---
+
+# 19. Client Portal
+
+Clients receive their own login.
+
+The client portal should be **read-only** for financial/project data.
+
+Client can see:
+
+```text
+My Account
+My Projects
+My Payments
+My Balance
+Reports
+```
+
+Admin creates the client record, enters the client's email, and clicks "Send Portal Invitation." The system sends an email with a secure link to set a password.
+
+---
+
+# 20. Client Portal — Dashboard
+
+The client dashboard should show:
+
+```text
+Total Projects
+Total Paid
+Outstanding
+Credit
+```
+
+Then:
+
+```text
+Recent Projects
+Recent Payments
+```
+
+---
+
+# 21. Client Projects
+
+Client can view their projects.
+
+Project details:
+
+```text
+Name
+Description
+Link
+Amount
+Status
+Assigned Payments
+Project Balance
+```
+
+Clients must not see internal information that does not exist in the product anyway.
+
+---
+
+# 22. Project Link
+
+If a project has a link:
+
+```text
+https://example.com/project
+```
+
+show:
+
+> View Project
+
+The link should open in a new browser tab with target="_blank" rel="noopener noreferrer"`.
+
+The link is optional.
+
+---
+
+# 23. Client Payments
+
+Client can view payment history.
+
+Example:
+
+| Date       | Amount | Currency | Method         | Project  |
+| ---------- | -----: | -------- | -------------- | -------- |
+| 2026-08-01 |  2,000 | USD      | Money Transfer | Website  |
+| 2026-08-15 |  3,000 | USD      | Handed         | —        |
+| 2026-08-25 |  1,000 | USD      | Check          | Branding |
+
+`—` means the payment was made to the client account rather than a specific project.
+
+---
+
+# 24. Comments
+
+Keep comments very simple.
+
+Comments can be attached to:
+
+```text
+Project
+Payment
+```
+
+No complex chat system is required.
+
+## Project comments
+
+Example:
+
+> Client requested the final version.
+
+## Payment comments
+
+Example:
+
+> Received by Ahmed at the office.
+
+---
+
+# 25. Comment Visibility
+
+Because the client can see projects and payments, comments need visibility.
+
+Each comment should have:
+
+```text
+Internal
+Client Visible
+```
+
+Internal comments are visible only to internal users.
+
+Client-visible comments are visible to both internal users and the relevant client.
+
+---
+
+# 26. Client Report
+
+The most important client-facing feature is the **Account Statement**.
+
+It should summarize:
+
+```text
+Client Information
+
+Projects
+Payment History
+Outstanding Amount
+Credit if applicable
+```
+
+Example:
+
+```text
+ABC COMPANY
+Account Statement
+
+Currency: USD
+
+PROJECTS
+----------------------------------------
+Website Design              $5,000
+Brand Identity              $3,000
+Hosting Setup               $1,000
+
+Total Projects              $9,000
+
+
+PAYMENTS
+----------------------------------------
+01 Aug 2026   $3,000   Money Transfer
+15 Aug 2026   $2,000   Handed
+25 Aug 2026   $1,000   Check
+
+Total Paid                   $6,000
+
+
+ACCOUNT SUMMARY
+----------------------------------------
+Total Projects              $9,000
+Total Paid                  $6,000
+Outstanding                 $3,000
+```
+
+---
+
+# 27. Report Export
+
+Both internal users and clients should be able to export the account statement.
+
+Required formats:
+
+```text
+PDF
+Excel
+```
+
+Excel should contain structured data rather than a screenshot-like representation.
+
+---
+
+# 28. PDF Report
+
+The PDF should be professionally formatted.
+
+Include:
+
+```text
+Business Name / Logo
+Client Name
+Company Name
+Statement Date
+Currency
+
+Projects
+Payment History
+
+Total Projects
+Total Paid
+Outstanding / Credit
+```
+
+The report should be suitable for sending directly to a client.
+
+---
+
+# 29. Excel Report
+
+Excel workbook should contain at least:
+
+### Sheet 1 — Summary
+
+```text
+Client
+Company
+Currency
+Total Projects
+Total Payments
+Outstanding
+Credit
+```
+
+### Sheet 2 — Projects
+
+```text
+Project
+Description
+Amount
+Currency
+Status
+Assigned Payments
+Project Balance
+```
+
+### Sheet 3 — Payments
+
+```text
+Date
+Amount
+Currency
+Method
+Project
+Received By
+Note
+```
+
+No complicated accounting spreadsheet is required.
+
+---
+
+# 30. Report Date
+
+Every generated report should show:
+
+```text
+Statement generated on:
+27 August 2026
+```
+
+The data should represent the current account state at the time the report is generated.
+
+---
+
+# 31. Report Filters
+
+Keep filters minimal.
+
+For client account reports:
+
+* All time
+* Custom date range for payments
+
+Projects should normally show the client's current project history.
+
+Payment history can optionally be filtered by date.
+
+---
+
+# 32. Important Reporting Rule
+
+The client account summary should always use the complete account totals unless the user explicitly requests a date-filtered report.
+
+Do not accidentally calculate:
+
+```text
+Projects this month - Payments this month
+```
+
+and label it "Outstanding Balance."
+
+Outstanding balance is an account-level value.
+
+---
+
+# 33. Dashboard Outstanding Calculation
+
+For a client with a single currency:
+
+```text
+Project Total
+=
+SUM(project.amount WHERE status != cancelled)
+
+Payment Total
+=
+SUM(payment.amount)
+
+Net Balance
+=
+Project Total - Payment Total
+```
+
+Then:
+
+```text
+if Net Balance > 0:
+    Outstanding = Net Balance
+    Credit = 0
+
+if Net Balance < 0:
+    Outstanding = 0
+    Credit = abs(Net Balance)
+
+if Net Balance == 0:
+    Outstanding = 0
+    Credit = 0
+```
+
+---
+
+# 34. Multi-Currency Handling
+
+Because currency conversion is explicitly out of scope, the application should encourage currency consistency.
+
+Recommended client setting:
+
+```text
+Default Currency: USD
+```
+
+When creating:
+
+* Project
+* Payment
+
+the client's currency should be preselected.
+
+The user may change it.
+
+However, if transactions contain multiple currencies, the system should display separate currency totals with currency symbol or abbreviation.
+
+Example:
+
+```text
+USD
+Projects:  $10,000
+Payments:   $7,000
+Balance:    $3,000
+
+EUR
+Payments:   €1,000
+```
+
+The system must **not** combine:
+
+```text
+$3,000 + €1,000
+```
+
+into one balance.
+
+---
+
+# 35. Currency Warning
+
+If a client account contains more than one currency, display:
+
+> This account contains multiple currencies. Outstanding balances are calculated separately by currency. No currency conversion is performed.
+
+This prevents misleading financial information.
+
+---
+
+# 36. Simplified Data Model
+
+The core application should require only these major tables:
+
+```text
+users
+
+clients
+
+projects
+
+payments
+
+comments
+```
+
+Additional supporting tables:
+
+```text
+currencies
+settings
+activity_logs
+```
+
+Do not create unnecessary tables.
+
+---
+
+# 37. Suggested Database Structure
+
+## users
+
+Use Laravel's standard authentication user table.
+
+---
+
+## clients
+
+```text
+id
+name
+company_name nullable
+email nullable
+mobile nullable
+address nullable
+currency
+status
+created_at
+updated_at
+```
+
+---
+
+## projects
+
+```text
+id
+client_id
+name
+description nullable
+link nullable
+amount
+currency
+status
+created_at
+updated_at
+```
+
+---
+
+## payments
+
+```text
+id
+client_id
+project_id nullable
+amount
+currency
+payment_date
+method
+received_by
+note nullable
+created_at
+updated_at
+```
+
+---
+
+## comments
+
+```text
+id
+user_id
+client_id
+commentable_type
+commentable_id
+body
+visibility
+created_at
+updated_at
+```
+
+Use a polymorphic relationship for:
+
+```text
+Project
+Payment
+```
+
+---
+
+# 38. Money Storage
+
+Never use floating-point types.
+
+Use:
+
+```text
+DECIMAL(19,4)
+```
+
+for amounts.
+
+Every monetary record must contain its currency.
+
+---
+
+# 39. Currency Storage
+
+Currencies can initially be a simple configurable list.
+
+Examples:
+
+```text
+USD
+EUR
+EGP
+SAR
+AED
+GBP
+```
+
+The application does not need exchange-rate tables because conversion is explicitly out of scope.
+
+---
+
+# 40. User Roles
+
+Keep roles minimal.
+
+## Administrator
+
+Full access.
+
+## Staff
+
+Can:
+
+* View clients
+* Create/edit projects
+* Add payments
+* View reports
+* Add comments
+
+Financial permissions can be restricted later if necessary.
+
+## Client
+
+Can only access their own account.
+
+---
+
+# 41. Client Security
+
+Client access must be strictly isolated.
+
+A client must only see:
+
+```text
+Their own client record
+Their own projects
+Their own payments
+Their own comments
+Their own reports
+```
+
+Never trust IDs supplied by the browser.
+
+Every client-facing request must be authorized server-side.
+
+---
+
+# 42. Internal Client Page
+
+Recommended layout:
+
+```text
+Client Header
+
+[ Total Projects ]
+[ Total Paid ]
+[ Outstanding ]
+
+Tabs:
+
+Overview
+Projects
+Payments
+Comments
+Statement
+```
+
+Keep navigation simple.
+
+---
+
+# 43. Internal Project Page
+
+Show:
+
+```text
+Project Name
+Client
+Description
+Link
+Amount
+Currency
+Status
+
+Assigned Payments
+Project Balance
+
+Comments
+```
+
+No tasks or project management functionality.
+
+---
+
+# 44. Internal Payment Page
+
+Show:
+
+```text
+Amount
+Currency
+Date
+Method
+Client
+Project (if assigned)
+Received By
+Note
+Comments
+```
+
+---
+
+# 45. Payment Entry UX
+
+Creating a payment should be extremely fast.
+
+Form:
+
+```text
+Client
+Amount
+Currency
+Date
+Method
+Project (optional)
+Received By
+Note (optional)
+```
+
+When a client is selected:
+
+```text
+Currency
+```
+
+automatically defaults to the client's default currency.
+
+When Project is selected:
+
+```text
+Project
+```
+
+must belong to the selected client.
+
+---
+
+# 46. Payment List
+
+Internal payment table:
+
+```text
+Date
+Client
+Amount
+Currency
+Method
+Project
+Received By
+```
+
+Filters:
+
+```text
+Client
+Project
+Method
+Currency
+Date range
+```
+
+---
+
+# 47. Project List
+
+Internal project table:
+
+```text
+Project
+Client
+Amount
+Currency
+Paid
+Balance
+Status
+```
+
+Filters:
+
+```text
+Client
+Status
+Currency
+```
+
+---
+
+# 48. Client List
+
+Internal client table:
+
+```text
+Client
+Company
+Currency
+Projects
+Total Projects
+Total Paid
+Outstanding
+```
+
+Search:
+
+```text
+Name
+Company
+Email
+Mobile
+```
+
+---
+
+# 49. Global Dashboard
+
+Keep the dashboard deliberately small.
+
+### Summary Cards
+
+```text
+Clients
+Active Projects
+Total Project Value
+Total Payments
+Outstanding
+```
+
+### Outstanding Clients
+
+```text
+Client
+Outstanding
+```
+
+### Recent Payments
+
+```text
+Date
+Client
+Amount
+Method
+```
+
+### Recent Projects
+
+```text
+Project
+Client
+Amount
+```
+
+---
+
+# 50. Activity Log
+
+A lightweight activity log is recommended.
+
+Track:
+
+```text
+Client created
+Client updated
+Project created
+Project updated
+Payment created
+Payment updated
+Payment deleted
+Comment added
+```
+
+This is useful for understanding who changed financial records.
+
+---
+
+# 51. Financial Record Deletion
+
+Do not silently delete payments.
+
+Recommended behavior:
+
+* Normal users cannot permanently delete payments.
+* Authorized users may void/delete according to permissions.
+* The activity log records the operation.
+
+For this simple application, a payment can remain in the database with a status:
+
+```text
+active
+void
+```
+
+Then calculations only include active payments.
+
+This is safer than physically deleting financial history.
+
+---
+
+# 52. Payment Status
+
+Add:
+
+```text
+Active
+Voided
+```
+
+Only active payments contribute to account balances.
+
+---
+
+# 53. Project Status and Balance
+
+Cancelled projects should be excluded from the account balance.
+
+Completed projects continue contributing to the account balance.
+
+This means:
+
+```text
+Active      → Included
+Completed   → Included
+Cancelled   → Excluded
+```
+
+---
+
+# 54. Project-Level Balance
+
+For a project:
+
+```text
+Project Amount
+-
+Payments Assigned Directly To Project
+=
+Project Balance
+```
+
+Important:
+
+**Unassigned account payments do not reduce the project's displayed balance.**
+
+They only reduce the overall client outstanding amount.
+
+This distinction must be clearly communicated in the UI.
+
+---
+
+# 55. Example — Real-World Scenario
+
+Client:
+
+```text
+ABC Company
+Default Currency: USD
+```
+
+Projects:
+
+```text
+Website       $10,000
+Branding       $5,000
+Hosting        $2,000
+```
+
+Total:
+
+```text
+$17,000
+```
+
+Payments:
+
+```text
+$5,000 → Website
+$3,000 → Account
+$2,000 → Account
+```
+
+Total payments:
+
+```text
+$10,000
+```
+
+Client outstanding:
+
+```text
+$17,000 - $10,000
+= $7,000
+```
+
+Website project:
+
+```text
+$10,000 - $5,000
+= $5,000
+```
+
+Branding:
+
+```text
+$5,000
+```
+
+Hosting:
+
+```text
+$2,000
+```
+
+The project balances total $12,000 because the $3,000 + $2,000 account-level payments have not been assigned to individual projects.
+
+That is **acceptable and intentional**.
+
+The client's authoritative balance remains:
+
+```text
+$7,000
+```
+
+---
+
+# 56. UI Treatment of Account Payments
+
+For an unassigned payment, display:
+
+> **Account Payment**
+
+instead of leaving the project column confusingly empty.
+
+Example:
+
+```text
+$3,000
+Money Transfer
+Account Payment
+```
+
+---
+
+# 57. Client Statement Payment History
+
+The statement should clearly distinguish:
+
+```text
+Project Payment
+Account Payment
+```
+
+Example:
+
+| Date   | Amount | Method         | Applied To |
+| ------ | -----: | -------------- | ---------- |
+| Aug 1  | $5,000 | Money Transfer | Website    |
+| Aug 10 | $3,000 | Handed         | Account    |
+| Aug 20 | $2,000 | Check          | Account    |
+
+---
+
+# 58. No Invoice Module
+
+Invoices are explicitly out of scope.
+
+Do not create:
+
+* Invoice table
+* Invoice statuses
+* Invoice numbers
+* Invoice line items
+* Invoice due dates
+
+The system is tracking **projects and payments**, not issuing invoices.
+
+---
+
+# 59. No Expense Module
+
+Expenses are explicitly out of scope.
+
+---
+
+# 60. No Accounting Module
+
+Do not implement:
+
+* General ledger
+* Accounts payable
+* Accounts receivable accounting
+* Tax accounting
+* Bank reconciliation
+* Payroll
+* Journal entries
+
+The outstanding amount is an operational client balance, not a formal accounting balance.
+
+---
+
+# 61. No Project Management Module
+
+Do not implement:
+
+* Tasks
+* Subtasks
+* Time tracking
+* Gantt
+* Kanban
+* Resource planning
+* Employee utilization
+* Project budgets
+
+The project entity exists only to identify work and its financial value.
+
+---
+
+# 62. No Currency Conversion
+
+Absolutely no:
+
+* Exchange-rate API
+* Automatic conversion
+* Historical exchange rates
+* Base-currency conversion
+
+Currency is metadata associated with each financial amount.
+
+---
+
+# 63. No External Integrations
+
+MVP should not integrate:
+
+* Stripe
+* PayPal
+* Accounting software
+* Banking
+* Google Drive
+* Dropbox
+* QuickBooks
+* Xero
+
+The application should remain self-contained.
+
+---
+
+# 64. Recommended Additional Small Features
+
+Only a few additions are worthwhile because they improve reliability without making the application complicated:
+
+### A. Client status
+
+Active / Archived.
+
+### B. Payment voiding
+
+Prevent historical financial records from disappearing.
+
+### C. Activity log
+
+Know who created or changed payments.
+
+### D. Internal/client-visible comments
+
+Useful for communication without building chat.
+
+### E. Account statement PDF/Excel
+
+Core client-facing deliverable.
+
+### F. Overpayment/credit
+
+Important for installment/prepayment scenarios.
+
+### G. Multiple-currency warning
+
+Prevents incorrect balances.
+
+I would stop here.
+
+---
+
+# 65. Recommended Navigation
+
+Internal:
+
+```text
+Dashboard
+
+Clients
+Projects
+Payments
+
+Reports
+
+Settings
+```
+
+Client:
+
+```text
+Dashboard
+Projects
+Payments
+Statement
+```
+
+Nothing more is necessary.
+
+---
+
+# 66. Settings
+
+Keep settings minimal.
+
+### Business
+
+```text
+Business Name
+Logo
+Email
+Phone
+Address
+```
+
+### Currency
+
+```text
+Available Currencies
+Default Currency
+```
+
+### Payment Methods
+
+```text
+Money Transfer
+Handed
+Check
+```
+
+### User Management
+
+```text
+Users
+Roles
+```
+
+---
+
+# 67. Report Generation
+
+PDF and Excel generation should happen server-side.
+
+Recommended flow:
+
+```text
+User clicks Export
+        ↓
+Laravel gathers account data
+        ↓
+Calculate summary
+        ↓
+Generate PDF/Excel
+        ↓
+Return download
+```
+
+The React frontend should not be responsible for authoritative report calculations.
+
+---
+
+# 68. PDF Technology
+
+Use a Laravel-compatible PDF library.
+
+The PDF should be generated from server-side data.
+
+The report template should be separate from business calculations.
+
+---
+
+# 69. Excel Technology
+
+Use a Laravel-compatible Excel library.
+
+The export should contain structured rows and columns.
+
+Do not generate an image of the report and put it into Excel.
+
+---
+
+# 70. Application Architecture
+
+Use:
+
+```text
+Laravel
+    ↓
+Controllers
+    ↓
+Services / Actions
+    ↓
+Eloquent Models
+    ↓
+MySQL
+```
+
+Frontend:
+
+```text
+Laravel
+    ↓
+Inertia
+    ↓
+React
+```
+
+Laravel's current documentation explicitly supports this Laravel + Inertia + React architecture in a single repository.
+
+---
+
+# 71. Suggested Backend Structure
+
+```text
+app/
+    Models/
+        Client.php
+        Project.php
+        Payment.php
+        Comment.php
+
+    Services/
+        ClientAccountService.php
+        PaymentService.php
+        ReportService.php
+
+    Policies/
+        ClientPolicy.php
+        ProjectPolicy.php
+        PaymentPolicy.php
+
+    Http/
+        Controllers/
+        Requests/
+```
+
+The key service should be:
+
+```text
+ClientAccountService
+```
+
+It should be the authoritative place for:
+
+```text
+Total Projects
+Total Payments
+Outstanding
+Credit
+Currency breakdown
+```
+
+---
+
+# 72. ClientAccountService
+
+Suggested methods:
+
+```text
+getSummary(Client $client)
+
+getProjectTotals(Client $client)
+
+getPaymentTotals(Client $client)
+
+getOutstanding(Client $client)
+
+getCurrencyBreakdown(Client $client)
+
+getStatement(Client $client)
+```
+
+The exact implementation may differ.
+
+The important requirement is:
+
+> Do not duplicate balance calculation logic throughout controllers, React pages, reports, and PDFs.
+
+---
+
+# 73. Authorization
+
+Use Laravel Policies.
+
+Examples:
+
+```text
+ClientPolicy
+ProjectPolicy
+PaymentPolicy
+CommentPolicy
+```
+
+Client users must only access records belonging to their own client account.
+
+---
+
+# 74. Frontend Structure
+
+Suggested:
+
+```text
+resources/js/
+    Pages/
+        Dashboard/
+        Clients/
+        Projects/
+        Payments/
+        Reports/
+        ClientPortal/
+
+    Components/
+        Clients/
+        Projects/
+        Payments/
+        Reports/
+        UI/
+```
+
+Use TypeScript if practical.
+
+---
+
+# 75. UI Principles
+
+The application should feel lightweight.
+
+Avoid:
+
+* Excessive dashboards
+* Complex charts
+* Too many menus
+* Deep navigation
+* Unnecessary modals
+* Over-engineered settings
+* Accounting terminology
+
+Prioritize:
+
+* Tables
+* Search
+* Clear totals
+* Fast data entry
+* Simple client accounts
+* Clear outstanding balances
+
+---
+
+# 76. Testing Requirements
+
+The most important automated tests are financial calculations.
+
+Test:
+
+### Basic
+
+```text
+Projects = $10,000
+Payments = $4,000
+
+Outstanding = $6,000
+```
+
+### Fully paid
+
+```text
+Projects = $10,000
+Payments = $10,000
+
+Outstanding = $0
+```
+
+### Overpaid
+
+```text
+Projects = $10,000
+Payments = $12,000
+
+Outstanding = $0
+Credit = $2,000
+```
+
+### Unassigned payments
+
+```text
+Project A = $5,000
+Project B = $5,000
+
+Account payments = $6,000
+
+Outstanding = $4,000
+```
+
+### Project-assigned payments
+
+Verify project-level balances independently.
+
+### Cancelled projects
+
+Cancelled project amounts must not contribute to outstanding.
+
+### Multiple currencies
+
+Verify currencies are calculated separately and never combined.
+
+### Payment validation
+
+A payment cannot be assigned to a project belonging to another client.
+
+### Client authorization
+
+A client cannot access another client's data.
+
+---
+
+# 77. Definition of Done
+
+A feature is complete when:
+
+* Database migration exists.
+* Model relationships exist.
+* Validation exists.
+* Authorization exists.
+* Backend behavior works.
+* React/Inertia UI works.
+* Empty states exist.
+* Error states exist.
+* Tests exist.
+* Financial calculations are tested.
+* Client access is tested.
+* No duplicate financial calculation logic exists.
+
+---
+
+# 78. Development Phases
+
+## Phase 1 — Foundation
+
+* Laravel setup
+* React/Inertia
+* Authentication
+* Layout
+* Users
+* Roles
+* Settings
+
+## Phase 2 — Clients
+
+* Client CRUD
+* Client list
+* Client detail
+* Client currency
+* Client account summary
+
+## Phase 3 — Projects
+
+* Project CRUD
+* Project status
+* Project amount
+* Project link
+* Project balance
+
+## Phase 4 — Payments
+
+* Payment CRUD
+* Payment assignment
+* Account payments
+* Payment methods
+* Payment history
+* Balance calculation
+
+## Phase 5 — Client Portal
+
+* Client authentication
+* Client dashboard
+* Projects
+* Payments
+* Balance
+* Comments
+
+## Phase 6 — Reports
+
+* Client statement
+* PDF
+* Excel
+* Payment history
+* Outstanding amount
+
+## Phase 7 — Hardening
+
+* Authorization tests
+* Financial tests
+* Audit/activity log
+* Multi-currency safeguards
+* Security review
+* Production optimization
+
+---
+
+# 79. AI Coding Agent Instructions
+
+The AI coding agent must keep this application simple.
+
+## Do not add features outside this PRD.
+
+If a feature is not required to manage:
+
+```text
+Clients
+Projects
+Payments
+Balances
+Client Reports
+```
+
+it should not be implemented unless explicitly requested.
+
+Do not introduce:
+
+* Microservices
+* REST API for unnecessary endpoints
+* Complex domain architecture
+* Event-driven architecture for simple CRUD
+* Accounting systems
+* AI features
+* Payment gateways
+* External integrations
+
+Use standard Laravel architecture.
+
+---
+
+# 80. Financial Rules for the AI Agent
+
+The following rules are immutable:
+
+### Rule 1
+
+Client outstanding is calculated from the client's projects and payments.
+
+### Rule 2
+
+A payment may optionally belong to a project.
+
+### Rule 3
+
+An unassigned payment belongs to the client account.
+
+### Rule 4
+
+Unassigned payments reduce the client's overall outstanding balance.
+
+### Rule 5
+
+Unassigned payments do not reduce an individual project's displayed balance.
+
+### Rule 6
+
+Cancelled projects do not contribute to the outstanding balance.
+
+### Rule 7
+
+Overpayments become client credit.
+
+### Rule 8
+
+Money uses decimal database types.
+
+### Rule 9
+
+No currency conversion exists.
+
+### Rule 10
+
+Different currencies must never be mathematically combined.
+
+### Rule 11
+
+The backend is authoritative for all financial calculations.
+
+### Rule 12
+
+Client users can never access another client's information.
+
+---
+
+# 81. Final Data Flow
+
+The entire application can be understood as:
+
+```text
+CLIENT
+  │
+  ├── PROJECT 1 ─────── Amount
+  │
+  ├── PROJECT 2 ─────── Amount
+  │
+  ├── PROJECT 3 ─────── Amount
+  │
+  └── PAYMENTS
+        │
+        ├── Payment → Project 1
+        ├── Payment → Project 2
+        └── Account Payment
+```
+
+Then:
+
+```text
+TOTAL PROJECT VALUE
+        -
+TOTAL CLIENT PAYMENTS
+        =
+OUTSTANDING / CREDIT
+```
+
+---
+
+# 82. Product Success Criteria
+
+The application is successful if an internal user can open any client and immediately understand:
+
+```text
+Who is the client?
+What projects do they have?
+How much are the projects worth?
+How much have they paid?
+When did they pay?
+How did they pay?
+Which payments were assigned to projects?
+How much is outstanding?
+Do they have credit?
+```
+
+And the client can independently log in and see:
+
+```text
+My Projects
+My Payments
+My Account Balance
+My Payment History
+My Statement
+```
+
+and export their account statement as:
+
+```text
+PDF
+Excel
+```
+
+---
+
+# 83. Product Definition
+
+The entire product should be thought of as:
+
+> **A simple client account ledger centered around projects and payments.**
+
+Its core relationship is:
+
+```text
+Client
+   ↓
+Projects = What the client owes
+   ↓
+Payments = What the client has paid
+   ↓
+Balance = What remains
+```
+
+Everything else exists only to make that information easier to enter, understand, communicate, and export.
+
+**The application should remain small by design.**
+

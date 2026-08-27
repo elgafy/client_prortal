@@ -1,0 +1,6 @@
+{
+  "permission": {
+    "websearch": "allow",
+    "webfetch": "allow"
+  }
+}
