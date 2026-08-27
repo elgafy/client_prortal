@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Client;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
@@ -29,6 +30,8 @@ class UserFactory extends Factory
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
+            'role' => User::ROLE_ADMIN,
+            'client_id' => null,
             'remember_token' => Str::random(10),
             'two_factor_secret' => null,
             'two_factor_recovery_codes' => null,
@@ -43,6 +46,27 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
+        ]);
+    }
+
+    /**
+     * Indicate that the user is an internal staff member.
+     */
+    public function staff(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => User::ROLE_STAFF,
+        ]);
+    }
+
+    /**
+     * Indicate that the user is a client portal user belonging to a client.
+     */
+    public function forClient(Client|int|null $client): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => User::ROLE_CLIENT,
+            'client_id' => $client instanceof Client ? $client->getKey() : $client,
         ]);
     }
 

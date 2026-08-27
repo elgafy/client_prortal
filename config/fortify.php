@@ -161,7 +161,7 @@ return [
     */
 
     'features' => [
-        Features::registration(),
+        // Registration is disabled: users are created by administrators or via client portal invitations.
         Features::resetPasswords(),
         Features::emailVerification(),
         Features::twoFactorAuthentication([
