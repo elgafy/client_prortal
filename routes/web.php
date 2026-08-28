@@ -8,7 +8,9 @@ use App\Http\Controllers\Portal\BalanceController;
 use App\Http\Controllers\Portal\DashboardController as PortalDashboardController;
 use App\Http\Controllers\Portal\PaymentController as PortalPaymentController;
 use App\Http\Controllers\Portal\ProjectController as PortalProjectController;
+use App\Http\Controllers\Portal\StatementController as PortalStatementController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\StatementController;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'welcome')->name('home');
@@ -25,6 +27,10 @@ Route::middleware(['auth', 'verified', 'internal'])->group(function () {
 
     Route::resource('payments', PaymentController::class)->except(['destroy']);
     Route::patch('payments/{payment}/void', [PaymentController::class, 'void'])->name('payments.void');
+
+    Route::get('clients/{client}/statement', [StatementController::class, 'show'])->name('clients.statement');
+    Route::get('clients/{client}/statement/pdf', [StatementController::class, 'pdf'])->name('clients.statement.pdf');
+    Route::get('clients/{client}/statement/excel', [StatementController::class, 'excel'])->name('clients.statement.excel');
 });
 
 // Comments — internal users comment on anything; client users on their own records only.
@@ -41,6 +47,9 @@ Route::prefix('portal')->name('portal.')->middleware(['auth', 'client'])->group(
     Route::get('payments', [PortalPaymentController::class, 'index'])->name('payments.index');
     Route::get('payments/{payment}', [PortalPaymentController::class, 'show'])->name('payments.show');
     Route::get('balance', BalanceController::class)->name('balance');
+    Route::get('statement', [PortalStatementController::class, 'show'])->name('statement');
+    Route::get('statement/pdf', [PortalStatementController::class, 'pdf'])->name('statement.pdf');
+    Route::get('statement/excel', [PortalStatementController::class, 'excel'])->name('statement.excel');
 });
 
 require __DIR__.'/settings.php';

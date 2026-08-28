@@ -1,5 +1,6 @@
 import { Form, Link, usePage } from '@inertiajs/react';
 import {
+    FileText,
     FolderKanban,
     LayoutGrid,
     LogOut,
@@ -16,6 +17,7 @@ const links = [
     { title: 'Projects', href: '/portal/projects', icon: FolderKanban },
     { title: 'Payments', href: '/portal/payments', icon: Wallet },
     { title: 'Balance', href: '/portal/balance', icon: Wallet },
+    { title: 'Statement', href: '/portal/statement', icon: FileText },
 ];
 
 export function PortalNav() {

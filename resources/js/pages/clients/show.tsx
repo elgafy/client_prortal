@@ -97,6 +97,11 @@ export default function ShowClient({
                                 </Button>
                             )}
                         </Form>
+                        <Button variant="outline" asChild>
+                            <Link href={`/clients/${client.id}/statement`}>
+                                Statement
+                            </Link>
+                        </Button>
                         <Form {...ClientController.archive.form(client.id)}>
                             {({ processing }) => (
                                 <Button

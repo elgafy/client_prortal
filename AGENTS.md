@@ -36,7 +36,9 @@ Done by the starter kit:
 
 **Phase 5 (Client Portal) complete:** portal invitation via password broker (`clients.invite`, admin-only, creates client-role user), `EnsureInternal`/`EnsureClient` middleware (client-role users redirect to portal, never see internal routes), portal controllers scoped to own client (cross-client → 404), portal pages (dashboard/projects/payments/balance) with `portal-layout`, polymorphic `comments` with `is_internal` flag (staff write, clients see non-internal only), comment UI on internal project/payment pages.
 
-Not started: reports, settings domain UI, hardening (activity log, security review).
+**Phase 6 (Reports) complete:** account statement page (internal `clients/{client}/statement` + portal `portal/statement`), PDF via barryvdh/laravel-dompdf (`statements/pdf.blade.php`), Excel via maatwebsite/excel v4 (3 sheets: Summary/Projects/Payments, `App\Exports\Statement\*`), optional payment date filter — summary always uses complete totals (PRD §32). `ClientAccountService::statement()` + `globalSummary()` (admin dashboard). Both roles can export; portal is scoped to own client.
+
+Not started: hardening (activity log, security review).
 
 ## Stack (actual)
 

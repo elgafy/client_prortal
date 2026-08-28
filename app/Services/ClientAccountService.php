@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Models\Client;
 use App\Models\Payment;
 use App\Models\Project;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Collection;
 
 /**
  * Single source of truth for client account balance and statement
@@ -106,6 +108,32 @@ class ClientAccountService
         return [
             'currencies' => $summary,
             'has_multiple_currencies' => count($summary) > 1,
+        ];
+    }
+
+    /**
+     * Full account statement data (PRD §26). The summary always uses
+     * complete account totals; the optional date range filters the payment
+     * history only (PRD §32).
+     *
+     * @return array{summary: array{currencies: array<string, array{projects_total: int, payments_total: int, net: int, outstanding: int, credit: int}>, has_multiple_currencies: bool}, projects: Collection<int, Project>, payments: Collection<int, Payment>, generatedAt: CarbonImmutable}
+     */
+    public function statement(Client $client, ?string $from = null, ?string $to = null): array
+    {
+        $payments = $client->payments()
+            ->active()
+            ->with('project:id,name')
+            ->when($from, fn ($query) => $query->whereDate('payment_date', '>=', $from))
+            ->when($to, fn ($query) => $query->whereDate('payment_date', '<=', $to))
+            ->orderBy('payment_date')
+            ->orderBy('id')
+            ->get();
+
+        return [
+            'summary' => $this->summary($client),
+            'projects' => $client->projects()->orderBy('name')->get(),
+            'payments' => $payments,
+            'generatedAt' => now(),
         ];
     }
 
