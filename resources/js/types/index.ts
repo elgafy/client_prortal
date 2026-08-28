@@ -1,5 +1,6 @@
 export type * from './auth';
 export type * from './client';
 export type * from './navigation';
+export type * from './payment';
 export type * from './project';
 export type * from './ui';

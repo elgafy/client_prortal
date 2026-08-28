@@ -103,17 +103,17 @@ export default function CreateProject({
                                 <InputError message={errors.name} />
                             </div>
 
-                            <div className="grid gap-4 sm:grid-cols-2">
+                            <div className="grid gap-4 sm:grid-cols-3">
                                 <div className="grid gap-2">
                                     <Label htmlFor="amount">Amount</Label>
                                     <Input
                                         id="amount"
                                         name="amount"
                                         type="number"
-                                        step="0.0001"
+                                        step="1"
                                         min="0"
                                         required
-                                        placeholder="0.0000"
+                                        placeholder="0"
                                     />
                                     <InputError message={errors.amount} />
                                 </div>
@@ -143,6 +143,19 @@ export default function CreateProject({
                                         </SelectContent>
                                     </Select>
                                     <InputError message={errors.currency} />
+                                </div>
+
+                                <div className="grid gap-2">
+                                    <Label htmlFor="project_date">Date</Label>
+                                    <Input
+                                        id="project_date"
+                                        name="project_date"
+                                        type="date"
+                                        defaultValue={new Date()
+                                            .toISOString()
+                                            .slice(0, 10)}
+                                    />
+                                    <InputError message={errors.project_date} />
                                 </div>
                             </div>
 

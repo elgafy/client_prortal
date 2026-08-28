@@ -16,8 +16,9 @@ class UpdateProjectRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
-            'amount' => ['required', 'numeric', 'min:0', 'max:999999999999.9999'],
+            'amount' => ['required', 'integer', 'min:0', 'max:999999999999'],
             'currency' => ['required', 'string', 'size:3', 'exists:currencies,code'],
+            'project_date' => ['nullable', 'date'],
             'status' => ['sometimes', 'in:'.implode(',', [
                 Project::STATUS_ACTIVE,
                 Project::STATUS_COMPLETED,

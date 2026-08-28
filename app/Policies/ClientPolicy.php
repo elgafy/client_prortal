@@ -35,4 +35,12 @@ class ClientPolicy
     {
         return $user->isInternal();
     }
+
+    /**
+     * Sending portal invitations is an administrative action.
+     */
+    public function invite(User $user, Client $client): bool
+    {
+        return $user->isAdmin();
+    }
 }

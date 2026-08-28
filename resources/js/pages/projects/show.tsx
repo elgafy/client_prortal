@@ -1,19 +1,27 @@
-import { Form, Head } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
 import { Link } from '@inertiajs/react';
 import { ExternalLink, Link2 } from 'lucide-react';
-import ProjectController from '@/actions/App/Http/Controllers/ProjectController';
 import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { formatMoney } from '@/lib/format';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
+import { formatDate, formatMoney } from '@/lib/format';
 import { edit as projectsEdit } from '@/routes/projects';
-import type {Project} from '@/types';
+import type { Payment, Project } from '@/types';
 
 type PageProps = {
     project: Project;
-    balance: string;
+    balance: number;
+    payments: Payment[];
 };
 
 const statusVariant: Record<
@@ -34,7 +42,7 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
     );
 }
 
-export default function ShowProject({ project, balance }: PageProps) {
+export default function ShowProject({ project, balance, payments }: PageProps) {
     return (
         <>
             <Head title={project.name} />
@@ -78,6 +86,11 @@ export default function ShowProject({ project, balance }: PageProps) {
                             <InfoRow
                                 label="Balance"
                                 value={formatMoney(balance, project.currency)}
+                            />
+                            <Separator />
+                            <InfoRow
+                                label="Date"
+                                value={formatDate(project.project_date)}
                             />
                             <Separator />
                             <InfoRow
@@ -128,10 +141,51 @@ export default function ShowProject({ project, balance }: PageProps) {
                             title="Payments"
                             description="Payments assigned to this project"
                         />
-                        <div className="flex items-center gap-3 rounded-xl border border-dashed p-10 text-center text-sm text-muted-foreground">
-                            <Link2 className="size-4 shrink-0" />
-                            No payments assigned yet.
-                        </div>
+
+                        {payments.length === 0 ? (
+                            <div className="flex items-center gap-3 rounded-xl border border-dashed p-10 text-center text-sm text-muted-foreground">
+                                <Link2 className="size-4 shrink-0" />
+                                No payments assigned yet.
+                            </div>
+                        ) : (
+                            <div className="overflow-hidden rounded-xl border">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Date</TableHead>
+                                            <TableHead>Amount</TableHead>
+                                            <TableHead>Method</TableHead>
+                                            <TableHead>Status</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {payments.map((payment) => (
+                                            <TableRow key={payment.id}>
+                                                <TableCell>
+                                                    {formatDate(
+                                                        payment.payment_date,
+                                                    )}
+                                                </TableCell>
+                                                <TableCell>
+                                                    {formatMoney(
+                                                        payment.amount,
+                                                        payment.currency,
+                                                    )}
+                                                </TableCell>
+                                                <TableCell>
+                                                    {payment.method}
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Badge variant="secondary">
+                                                        {payment.status}
+                                                    </Badge>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

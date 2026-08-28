@@ -24,6 +24,9 @@ class ResetUserPassword implements ResetsUserPasswords
 
         $user->forceFill([
             'password' => $input['password'],
+            // Completing the emailed reset link proves email ownership —
+            // this is how invited portal users become verified.
+            'email_verified_at' => $user->email_verified_at ?? now(),
         ])->save();
     }
 }

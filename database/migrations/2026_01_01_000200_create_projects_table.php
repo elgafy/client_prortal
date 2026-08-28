@@ -13,8 +13,9 @@ return new class extends Migration
             $table->foreignId('client_id')->constrained()->restrictOnDelete();
             $table->string('name');
             $table->text('description')->nullable();
-            $table->decimal('amount', 19, 4);
+            $table->unsignedBigInteger('amount'); // whole currency units, no decimals
             $table->string('currency', 3);
+            $table->date('project_date')->nullable();
             $table->string('status')->default('active'); // active|completed|cancelled
             $table->string('link')->nullable();
             $table->timestamps();

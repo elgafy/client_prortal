@@ -6,9 +6,13 @@ use App\Http\Requests\Clients\StoreClientRequest;
 use App\Http\Requests\Clients\UpdateClientRequest;
 use App\Models\Client;
 use App\Models\Currency;
+use App\Models\User;
 use App\Services\ClientAccountService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -71,6 +75,7 @@ class ClientController extends Controller
         return Inertia::render('clients/show', [
             'client' => $client,
             'projects' => $client->projects()->orderByDesc('created_at')->get(),
+            'payments' => $client->payments()->with('project:id,name')->orderByDesc('payment_date')->orderByDesc('id')->get(),
             'summary' => $this->accounts->summary($client),
         ]);
     }
@@ -94,6 +99,40 @@ class ClientController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Client updated.')]);
 
         return to_route('clients.show', $client);
+    }
+
+    /**
+     * Invite the client to the portal: create (or reuse) a client-role user
+     * and email a secure set-password link (PRD §19).
+     */
+    public function invite(Request $request, Client $client): RedirectResponse
+    {
+        $this->authorize('invite', $client);
+
+        if (! $client->email) {
+            Inertia::flash('toast', [
+                'type' => 'error',
+                'message' => __('Add an email address to this client before sending a portal invitation.'),
+            ]);
+
+            return back();
+        }
+
+        $user = User::query()->firstOrNew(['email' => $client->email]);
+        $user->name = $client->name;
+        $user->role = User::ROLE_CLIENT;
+        $user->client_id = $client->id;
+        $user->password ??= Hash::make(Str::random(32)); // set for real via the invitation link
+        $user->save();
+
+        Password::sendResetLink(['email' => $user->email]);
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => __('Portal invitation sent to :email.', ['email' => $user->email]),
+        ]);
+
+        return back();
     }
 
     /**

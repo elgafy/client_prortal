@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Client;
+use App\Models\Payment;
 use App\Models\Project;
 
 /**
@@ -12,18 +13,19 @@ use App\Models\Project;
  *
  * Rules (PRD §33, §80):
  * - Project Total = SUM(project.amount WHERE status != cancelled)
+ * - Payment Total = SUM(payment.amount WHERE status = active)
  * - Net = Project Total - Payment Total (per currency, never combined)
  * - Net > 0 → Outstanding; Net < 0 → Credit = abs(Net)
+ *
+ * All amounts are integers (whole currency units) — no decimals anywhere.
  */
 class ClientAccountService
 {
-    private const SCALE = 4;
-
     /**
      * Per-currency account summary for a client. Different currencies are
      * never mathematically combined (PRD §34–35).
      *
-     * @return array{currencies: array<string, array{projects_total: string, payments_total: string, net: string, outstanding: string, credit: string}>, has_multiple_currencies: bool}
+     * @return array{currencies: array<string, array{projects_total: int, payments_total: int, net: int, outstanding: int, credit: int}>, has_multiple_currencies: bool}
      */
     public function summary(Client $client): array
     {
@@ -33,8 +35,11 @@ class ClientAccountService
             ->groupBy('currency')
             ->pluck('total', 'currency');
 
-        // Payments arrive in Phase 4; until then every client has paid nothing.
-        $paymentsTotals = collect();
+        $paymentsTotals = $client->payments()
+            ->active()
+            ->selectRaw('currency, SUM(amount) as total')
+            ->groupBy('currency')
+            ->pluck('total', 'currency');
 
         $currencies = $projectsTotals
             ->keys()
@@ -45,18 +50,57 @@ class ClientAccountService
         $summary = [];
 
         foreach ($currencies as $currency) {
-            $projectsRaw = (string) ($projectsTotals[$currency] ?? '0');
-            $paymentsRaw = (string) ($paymentsTotals[$currency] ?? '0');
-
             $summary[$currency] = $this->buildLine(
-                is_numeric($projectsRaw) ? $projectsRaw : '0',
-                is_numeric($paymentsRaw) ? $paymentsRaw : '0',
+                (int) ($projectsTotals[$currency] ?? 0),
+                (int) ($paymentsTotals[$currency] ?? 0),
             );
         }
 
         // A client with no projects still reports its default currency.
         if ($summary === []) {
-            $summary[$client->currency] = $this->buildLine('0', '0');
+            $summary[$client->currency] = $this->buildLine(0, 0);
+        }
+
+        return [
+            'currencies' => $summary,
+            'has_multiple_currencies' => count($summary) > 1,
+        ];
+    }
+
+    /**
+     * Account-wide totals across all clients, per currency. Used by the
+     * admin dashboard. Same rules as summary() — cancelled projects and
+     * voided payments are excluded.
+     *
+     * @return array{currencies: array<string, array{projects_total: int, payments_total: int, net: int, outstanding: int, credit: int}>, has_multiple_currencies: bool}
+     */
+    public function globalSummary(): array
+    {
+        $projectsTotals = Project::query()
+            ->notCancelled()
+            ->selectRaw('currency, SUM(amount) as total')
+            ->groupBy('currency')
+            ->pluck('total', 'currency');
+
+        $paymentsTotals = Payment::query()
+            ->active()
+            ->selectRaw('currency, SUM(amount) as total')
+            ->groupBy('currency')
+            ->pluck('total', 'currency');
+
+        $currencies = $projectsTotals
+            ->keys()
+            ->merge($paymentsTotals->keys())
+            ->unique()
+            ->values();
+
+        $summary = [];
+
+        foreach ($currencies as $currency) {
+            $summary[$currency] = $this->buildLine(
+                (int) ($projectsTotals[$currency] ?? 0),
+                (int) ($paymentsTotals[$currency] ?? 0),
+            );
         }
 
         return [
@@ -69,37 +113,28 @@ class ClientAccountService
      * Balance remaining on a single project: amount minus active payments
      * assigned to it. Unassigned payments never affect project balances (PRD §14).
      */
-    public function projectBalance(Project $project): string
+    public function projectBalance(Project $project): int
     {
-        // Assigned payments are introduced in Phase 4; until then the full
-        // amount is outstanding. Raw DB value — never float (PRD §80.6).
-        $raw = (string) $project->getRawOriginal('amount');
+        $assigned = (int) $project->payments()
+            ->active()
+            ->sum('amount');
 
-        return bcadd(is_numeric($raw) ? $raw : '0', '0', self::SCALE);
+        return (int) $project->amount - $assigned;
     }
 
     /**
-     * @param  numeric-string  $projectsRaw
-     * @param  numeric-string  $paymentsRaw
-     * @return array{projects_total: string, payments_total: string, net: string, outstanding: string, credit: string}
+     * @return array{projects_total: int, payments_total: int, net: int, outstanding: int, credit: int}
      */
-    private function buildLine(string $projectsRaw, string $paymentsRaw): array
+    private function buildLine(int $projectsTotal, int $paymentsTotal): array
     {
-        $zero = bcadd('0', '0', self::SCALE);
-        $projectsTotal = bcadd($projectsRaw, '0', self::SCALE);
-        $paymentsTotal = bcadd($paymentsRaw, '0', self::SCALE);
-
-        $net = bcsub($projectsTotal, $paymentsTotal, self::SCALE);
-
-        $outstanding = bccomp($net, '0', self::SCALE) > 0 ? $net : $zero;
-        $credit = bccomp($net, '0', self::SCALE) < 0 ? bcmul($net, '-1', self::SCALE) : $zero;
+        $net = $projectsTotal - $paymentsTotal;
 
         return [
             'projects_total' => $projectsTotal,
             'payments_total' => $paymentsTotal,
             'net' => $net,
-            'outstanding' => $outstanding,
-            'credit' => $credit,
+            'outstanding' => max($net, 0),
+            'credit' => max(-$net, 0),
         ];
     }
 }

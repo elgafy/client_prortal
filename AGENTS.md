@@ -32,7 +32,11 @@ Done by the starter kit:
 
 **Phase 3 (Projects) complete:** `ProjectController`, `ProjectPolicy`, Store/Update requests, global list w/ search, create/edit/show pages, `ClientAccountService` (bcmath, per-currency, cancelled excluded, credit branch tested). Client show page now has summary cards + projects table. Money display via `lib/format.ts` `formatMoney()`.
 
-Not started: payments, comments, reports, settings domain UI, client portal.
+**Phase 4 (Payments) complete:** `payments` table (received_from/by, note, status active|void), `PaymentController` + `PaymentPolicy` + requests (assignment same-client rule, payment currency must match project currency, method validated against settings), void action (one-way, policy-guarded), global history list, create/edit/show pages. `ClientAccountService` now aggregates active payments per currency + real project balances. Client/project show pages list payments.
+
+**Phase 5 (Client Portal) complete:** portal invitation via password broker (`clients.invite`, admin-only, creates client-role user), `EnsureInternal`/`EnsureClient` middleware (client-role users redirect to portal, never see internal routes), portal controllers scoped to own client (cross-client → 404), portal pages (dashboard/projects/payments/balance) with `portal-layout`, polymorphic `comments` with `is_internal` flag (staff write, clients see non-internal only), comment UI on internal project/payment pages.
+
+Not started: reports, settings domain UI, hardening (activity log, security review).
 
 ## Stack (actual)
 
@@ -73,7 +77,7 @@ Supporting tables: `currencies`, `settings`, `activity_logs`. Nothing more (PRD 
 3. Unassigned payments reduce the client's overall outstanding but NOT individual project balances.
 4. Cancelled projects are excluded from outstanding calculations (records preserved).
 5. Overpayments become client credit (display as credit, never negative balance).
-6. Money uses `decimal(19,4)` columns — never floating point.
+6. Money is stored as **integers** (whole currency units, no decimals) — per client decision, overriding PRD §80.6's `decimal(19,4)`. Never float; `formatMoney()` renders without fraction digits.
 7. No currency conversion. Different currencies must never be mathematically combined; show per-currency breakdowns + warning (PRD §34–35).
 8. The backend is authoritative for all financial calculations — never trust the frontend.
 9. Client users can only access their own records (strict server-side authorization).

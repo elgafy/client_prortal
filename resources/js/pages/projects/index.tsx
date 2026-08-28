@@ -13,13 +13,13 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { formatMoney } from '@/lib/format';
+import { formatDate, formatMoney } from '@/lib/format';
 import {
     create as projectsCreate,
     index as projectsIndex,
     show as projectsShow,
 } from '@/routes/projects';
-import type {Paginator, Project} from '@/types';
+import type { Paginator, Project } from '@/types';
 
 type PageProps = {
     projects: Paginator<Project>;
@@ -101,6 +101,7 @@ export default function ProjectsIndex() {
                                 <TableRow>
                                     <TableHead>Project</TableHead>
                                     <TableHead>Client</TableHead>
+                                    <TableHead>Date</TableHead>
                                     <TableHead>Amount</TableHead>
                                     <TableHead>Status</TableHead>
                                 </TableRow>
@@ -121,6 +122,9 @@ export default function ProjectsIndex() {
                                         </TableCell>
                                         <TableCell>
                                             {project.client?.name ?? '—'}
+                                        </TableCell>
+                                        <TableCell>
+                                            {formatDate(project.project_date)}
                                         </TableCell>
                                         <TableCell>
                                             {formatMoney(

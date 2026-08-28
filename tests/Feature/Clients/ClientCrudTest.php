@@ -36,9 +36,9 @@ test('administrators and staff can view the client list', function () {
 test('client-role users cannot access client management', function () {
     $clientUser = User::factory()->forClient(null)->create();
 
-    $this->actingAs($clientUser)->get(route('clients.index'))->assertForbidden();
-    $this->actingAs($clientUser)->get(route('clients.create'))->assertForbidden();
-    $this->actingAs($clientUser)->post(route('clients.store'), clientPayload())->assertForbidden();
+    $this->actingAs($clientUser)->get(route('clients.index'))->assertRedirect(route('portal.dashboard'));
+    $this->actingAs($clientUser)->get(route('clients.create'))->assertRedirect(route('portal.dashboard'));
+    $this->actingAs($clientUser)->post(route('clients.store'), clientPayload())->assertRedirect(route('portal.dashboard'));
 });
 
 test('an administrator can create a client', function () {

@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Project extends Model
 {
@@ -20,6 +22,7 @@ class Project extends Model
         'description',
         'amount',
         'currency',
+        'project_date',
         'status',
         'link',
     ];
@@ -27,7 +30,8 @@ class Project extends Model
     protected function casts(): array
     {
         return [
-            'amount' => 'decimal:4',
+            'amount' => 'integer',
+            'project_date' => 'date:Y-m-d',
         ];
     }
 
@@ -35,6 +39,18 @@ class Project extends Model
     public function client(): BelongsTo
     {
         return $this->belongsTo(Client::class);
+    }
+
+    /** @return HasMany<Payment, $this> */
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    /** @return MorphMany<Comment, $this> */
+    public function comments(): MorphMany
+    {
+        return $this->morphMany(Comment::class, 'commentable');
     }
 
     /**

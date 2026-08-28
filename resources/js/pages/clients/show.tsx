@@ -16,14 +16,16 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { formatMoney } from '@/lib/format';
-import { edit as clientsEdit, show as clientsShow } from '@/routes/clients';
+import { formatDate, formatMoney } from '@/lib/format';
+import { edit as clientsEdit } from '@/routes/clients';
+import { show as paymentsShow } from '@/routes/payments';
 import { show as projectsShow } from '@/routes/projects';
-import type { AccountSummary, Client, Project } from '@/types';
+import type { AccountSummary, Client, Payment, Project } from '@/types';
 
 type PageProps = {
     client: Client;
     projects: Project[];
+    payments: Payment[];
     summary: AccountSummary;
 };
 
@@ -45,7 +47,12 @@ function InfoRow({ label, value }: { label: string; value: ReactNode }) {
     );
 }
 
-export default function ShowClient({ client, projects, summary }: PageProps) {
+export default function ShowClient({
+    client,
+    projects,
+    payments,
+    summary,
+}: PageProps) {
     return (
         <>
             <Head title={client.name} />
@@ -74,6 +81,22 @@ export default function ShowClient({ client, projects, summary }: PageProps) {
                     </div>
 
                     <div className="flex gap-2">
+                        <Form {...ClientController.invite.form(client.id)}>
+                            {({ processing }) => (
+                                <Button
+                                    type="submit"
+                                    variant="outline"
+                                    disabled={processing || !client.email}
+                                    title={
+                                        client.email
+                                            ? 'Send a portal invitation email'
+                                            : 'Add an email address first'
+                                    }
+                                >
+                                    Send Portal Invitation
+                                </Button>
+                            )}
+                        </Form>
                         <Form {...ClientController.archive.form(client.id)}>
                             {({ processing }) => (
                                 <Button
@@ -113,7 +136,7 @@ export default function ShowClient({ client, projects, summary }: PageProps) {
                             <Card key={currency}>
                                 <CardHeader>
                                     <CardTitle className="text-sm font-medium text-muted-foreground">
-                                        {line.credit !== '0.0000'
+                                        {line.credit !== 0
                                             ? 'Credit'
                                             : 'Outstanding'}
                                         {' · '}
@@ -122,7 +145,7 @@ export default function ShowClient({ client, projects, summary }: PageProps) {
                                 </CardHeader>
                                 <CardContent>
                                     <p className="text-2xl font-display">
-                                        {line.credit !== '0.0000'
+                                        {line.credit !== 0
                                             ? formatMoney(line.credit, currency)
                                             : formatMoney(
                                                   line.outstanding,
@@ -255,9 +278,72 @@ export default function ShowClient({ client, projects, summary }: PageProps) {
                             title="Payments"
                             description="What the client has paid"
                         />
-                        <div className="rounded-xl border border-dashed p-10 text-center text-sm text-muted-foreground">
-                            No payments yet.
-                        </div>
+
+                        {payments.length === 0 ? (
+                            <div className="rounded-xl border border-dashed p-10 text-center text-sm text-muted-foreground">
+                                No payments yet.
+                            </div>
+                        ) : (
+                            <div className="overflow-hidden rounded-xl border">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Date</TableHead>
+                                            <TableHead>Amount</TableHead>
+                                            <TableHead>Method</TableHead>
+                                            <TableHead>Project</TableHead>
+                                            <TableHead>Status</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {payments.map((payment) => (
+                                            <TableRow
+                                                key={payment.id}
+                                                className="cursor-pointer"
+                                                onClick={() =>
+                                                    router.visit(
+                                                        paymentsShow(
+                                                            payment.id,
+                                                        ),
+                                                    )
+                                                }
+                                            >
+                                                <TableCell>
+                                                    {formatDate(
+                                                        payment.payment_date,
+                                                    )}
+                                                </TableCell>
+                                                <TableCell>
+                                                    {formatMoney(
+                                                        payment.amount,
+                                                        payment.currency,
+                                                    )}
+                                                </TableCell>
+                                                <TableCell>
+                                                    {payment.method}
+                                                </TableCell>
+                                                <TableCell>
+                                                    {payment.project?.name ??
+                                                        'Account payment'}
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Badge
+                                                        variant={
+                                                            payment.status ===
+                                                            'active'
+                                                                ? 'secondary'
+                                                                : 'destructive'
+                                                        }
+                                                    >
+                                                        {payment.status}
+                                                    </Badge>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

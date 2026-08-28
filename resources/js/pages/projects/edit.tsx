@@ -46,14 +46,14 @@ export default function EditProject({ project, currencies }: PageProps) {
                                 <InputError message={errors.name} />
                             </div>
 
-                            <div className="grid gap-4 sm:grid-cols-2">
+                            <div className="grid gap-4 sm:grid-cols-3">
                                 <div className="grid gap-2">
                                     <Label htmlFor="amount">Amount</Label>
                                     <Input
                                         id="amount"
                                         name="amount"
                                         type="number"
-                                        step="0.0001"
+                                        step="1"
                                         min="0"
                                         required
                                         defaultValue={project.amount}
@@ -85,6 +85,19 @@ export default function EditProject({ project, currencies }: PageProps) {
                                         </SelectContent>
                                     </Select>
                                     <InputError message={errors.currency} />
+                                </div>
+
+                                <div className="grid gap-2">
+                                    <Label htmlFor="project_date">Date</Label>
+                                    <Input
+                                        id="project_date"
+                                        name="project_date"
+                                        type="date"
+                                        defaultValue={
+                                            project.project_date ?? undefined
+                                        }
+                                    />
+                                    <InputError message={errors.project_date} />
                                 </div>
                             </div>
 

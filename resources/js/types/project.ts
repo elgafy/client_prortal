@@ -5,8 +5,9 @@ export type Project = {
     client_id: number;
     name: string;
     description: string | null;
-    amount: string;
+    amount: number;
     currency: string;
+    project_date: string | null;
     status: ProjectStatus;
     link: string | null;
     created_at: string;
@@ -18,11 +19,11 @@ export type Project = {
 };
 
 export type AccountSummaryLine = {
-    projects_total: string;
-    payments_total: string;
-    net: string;
-    outstanding: string;
-    credit: string;
+    projects_total: number;
+    payments_total: number;
+    net: number;
+    outstanding: number;
+    credit: number;
 };
 
 export type AccountSummary = {

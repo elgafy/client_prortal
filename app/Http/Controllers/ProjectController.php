@@ -76,6 +76,8 @@ class ProjectController extends Controller
         return Inertia::render('projects/show', [
             'project' => $project->load('client:id,name'),
             'balance' => $this->accounts->projectBalance($project),
+            'payments' => $project->payments()->active()->orderByDesc('payment_date')->get(),
+            'comments' => $project->comments()->with('user:id,name')->orderByDesc('created_at')->get(),
         ]);
     }
 

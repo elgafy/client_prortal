@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { FolderKanban, LayoutGrid, Users } from 'lucide-react';
+import { Banknote, FolderKanban, LayoutGrid, Users } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
 import { index as clientsIndex } from '@/routes/clients';
+import { index as paymentsIndex } from '@/routes/payments';
 import { index as projectsIndex } from '@/routes/projects';
 import type { NavItem } from '@/types';
 
@@ -32,6 +33,11 @@ const mainNavItems: NavItem[] = [
         title: 'Projects',
         href: projectsIndex(),
         icon: FolderKanban,
+    },
+    {
+        title: 'Payments',
+        href: paymentsIndex(),
+        icon: Banknote,
     },
 ];
 
