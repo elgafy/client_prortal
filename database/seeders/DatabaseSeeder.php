@@ -22,8 +22,8 @@ class DatabaseSeeder extends Seeder
 
         // Initial administrator account.
         User::factory()->create([
-            'name' => 'Administrator',
-            'email' => 'admin@example.com',
+            'name' => 'El Gafy',
+            'email' => 'abdalaziz.elgafy@gmail.com',
         ]);
     }
 }
