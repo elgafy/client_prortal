@@ -2,12 +2,15 @@
 
 namespace App\Http\Requests\Projects;
 
+use App\Http\Requests\Projects\Concerns\ValidatesProjectDiscounts;
 use App\Models\Project;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreProjectRequest extends FormRequest
 {
+    use ValidatesProjectDiscounts;
+
     /**
      * @return array<string, ValidationRule|array<mixed>|string>
      */
@@ -17,7 +20,7 @@ class StoreProjectRequest extends FormRequest
             'client_id' => ['required', 'integer', 'exists:clients,id'],
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
-            'amount' => ['required', 'integer', 'min:0', 'max:999999999999'],
+            'subtotal' => ['required', 'integer', 'min:0', 'max:999999999999'],
             'currency' => ['required', 'string', 'size:3', 'exists:currencies,code'],
             'project_date' => ['nullable', 'date'],
             'status' => ['sometimes', 'in:'.implode(',', [
@@ -26,6 +29,7 @@ class StoreProjectRequest extends FormRequest
                 Project::STATUS_CANCELLED,
             ])],
             'link' => ['nullable', 'url', 'max:2000'],
+            ...$this->discountRules(),
         ];
     }
 }

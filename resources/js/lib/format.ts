@@ -20,3 +20,16 @@ export function formatDate(date: string | null | undefined): string {
         new Date(date),
     );
 }
+
+/**
+ * Format a discount percentage (e.g. "12.50") without trailing zeros.
+ */
+export function formatPercent(percentage: string | number | null): string {
+    if (percentage === null) {
+        return '—';
+    }
+
+    const value = Number(percentage);
+
+    return `${Number.isInteger(value) ? value : value.toFixed(2).replace(/0$/, '')}%`;
+}

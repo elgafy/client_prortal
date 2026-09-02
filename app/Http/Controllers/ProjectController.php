@@ -8,8 +8,10 @@ use App\Models\Client;
 use App\Models\Currency;
 use App\Models\Project;
 use App\Services\ClientAccountService;
+use App\Services\ProjectDiscountService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -17,6 +19,7 @@ class ProjectController extends Controller
 {
     public function __construct(
         private readonly ClientAccountService $accounts,
+        private readonly ProjectDiscountService $discounts,
     ) {}
 
     /**
@@ -63,7 +66,12 @@ class ProjectController extends Controller
     {
         $this->authorize('create', Project::class);
 
-        $project = Project::create($request->validated());
+        $project = DB::transaction(function () use ($request): Project {
+            $project = Project::create($this->projectAttributes($request));
+            $this->discounts->sync($project, (array) $request->input('discounts', []));
+
+            return $project;
+        });
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Project created.')]);
 
@@ -75,7 +83,7 @@ class ProjectController extends Controller
         $this->authorize('view', $project);
 
         return Inertia::render('projects/show', [
-            'project' => $project->load('client:id,name'),
+            'project' => $project->load(['client:id,name', 'discounts.project']),
             'balance' => $this->accounts->projectBalance($project),
             'payments' => $project->payments()->active()->orderByDesc('payment_date')->get(),
             'comments' => $project->comments()->with('user:id,name')->orderByDesc('created_at')->get(),
@@ -87,7 +95,7 @@ class ProjectController extends Controller
         $this->authorize('update', $project);
 
         return Inertia::render('projects/edit', [
-            'project' => $project,
+            'project' => $project->load('discounts.project'),
             'currencies' => Currency::query()->orderBy('code')->pluck('code'),
         ]);
     }
@@ -96,10 +104,26 @@ class ProjectController extends Controller
     {
         $this->authorize('update', $project);
 
-        $project->update($request->validated());
+        DB::transaction(function () use ($request, $project): void {
+            $project->update($this->projectAttributes($request));
+            $this->discounts->sync($project, (array) $request->input('discounts', []));
+        });
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Project updated.')]);
 
         return to_route('projects.show', $project);
+    }
+
+    /**
+     * The validated project fields — discounts are handled separately and
+     * `amount` is always derived, never accepted from the client.
+     *
+     * @return array<string, mixed>
+     */
+    private function projectAttributes(StoreProjectRequest|UpdateProjectRequest $request): array
+    {
+        return collect($request->validated())
+            ->except('discounts')
+            ->all();
     }
 }

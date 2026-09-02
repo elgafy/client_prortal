@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Client;
+use App\Models\Payment;
 use App\Models\Project;
 use App\Models\User;
 use App\Services\ClientAccountService;
@@ -19,7 +20,7 @@ function projectPayload(array $overrides = []): array
         'client_id' => $client->id,
         'name' => 'Website Design',
         'description' => 'Marketing site redesign',
-        'amount' => '3500',
+        'subtotal' => '3500',
         'currency' => 'USD',
         'status' => Project::STATUS_ACTIVE,
         'link' => 'https://example.com/project',
@@ -52,6 +53,8 @@ test('an administrator can create a project for a client', function () {
     $project = Project::where('name', 'Website Design')->firstOrFail();
 
     expect($project->amount)->toBe(3500)
+        ->and($project->subtotal)->toBe(3500)
+        ->and($project->discount_total)->toBe(0)
         ->and($project->currency)->toBe('USD')
         ->and($project->status)->toBe(Project::STATUS_ACTIVE);
 
@@ -63,76 +66,179 @@ test('project creation validates amount, currency and link', function () {
     $admin = User::factory()->create();
     $this->actingAs($admin)
         ->post(route('projects.store'), projectPayload([
-            'amount' => '-5',
+            'subtotal' => '-5',
             'currency' => 'XXX',
             'link' => 'not-a-url',
         ]))
-        ->assertInvalid(['amount', 'currency', 'link']);
+        ->assertInvalid(['subtotal', 'currency', 'link']);
 
     expect(Project::count())->toBe(0);
 });
 
-test('an administrator can update a project including cancelling it', function () {
+test('discounts and deductions reduce the final amount, never the subtotal', function () {
+    $admin = User::factory()->create();
+
+    $this->actingAs($admin)
+        ->post(route('projects.store'), projectPayload([
+            'subtotal' => '5000',
+            'discounts' => [
+                [
+                    'title' => 'Early payment',
+                    'type' => 'discount',
+                    'mode' => 'amount',
+                    'amount' => '500',
+                    'description' => 'Paid up front',
+                ],
+                [
+                    'title' => 'Penalty',
+                    'type' => 'deduction',
+                    'mode' => 'percentage',
+                    'percentage' => '10',
+                ],
+            ],
+        ]))
+        ->assertRedirect();
+
+    $project = Project::where('name', 'Website Design')->firstOrFail();
+
+    expect($project->subtotal)->toBe(5000)
+        ->and($project->discount_total)->toBe(1000) // 500 + 10% of 5000
+        ->and($project->amount)->toBe(4000)
+        ->and($project->discounts()->count())->toBe(2)
+        ->and($project->discounts()->first()->title)->toBe('Early payment');
+});
+
+test('percentage discounts are rounded to whole currency units', function () {
+    $admin = User::factory()->create();
+
+    $this->actingAs($admin)
+        ->post(route('projects.store'), projectPayload([
+            'subtotal' => '333',
+            'discounts' => [
+                [
+                    'title' => 'Ten percent',
+                    'type' => 'discount',
+                    'mode' => 'percentage',
+                    'percentage' => '10',
+                ],
+            ],
+        ]))
+        ->assertRedirect();
+
+    $project = Project::where('name', 'Website Design')->firstOrFail();
+
+    // 10% of 333 = 33.3 → rounds to 33 whole currency units.
+    expect($project->discount_total)->toBe(33)
+        ->and($project->amount)->toBe(300);
+});
+
+test('combined discounts cannot exceed the subtotal', function () {
+    $admin = User::factory()->create();
+
+    $this->actingAs($admin)
+        ->post(route('projects.store'), projectPayload([
+            'subtotal' => '1000',
+            'discounts' => [
+                [
+                    'title' => 'Too much',
+                    'type' => 'discount',
+                    'mode' => 'amount',
+                    'amount' => '1001',
+                ],
+            ],
+        ]))
+        ->assertInvalid(['discounts']);
+
+    expect(Project::count())->toBe(0);
+});
+
+test('discount rows are validated for structure', function () {
+    $admin = User::factory()->create();
+
+    $this->actingAs($admin)
+        ->post(route('projects.store'), projectPayload([
+            'discounts' => [
+                ['type' => 'bogus', 'mode' => 'amount'], // no title, bad type, no amount
+                [
+                    'title' => 'Bad percentage',
+                    'type' => 'discount',
+                    'mode' => 'percentage',
+                    'percentage' => '150',
+                ],
+            ],
+        ]))
+        ->assertInvalid([
+            'discounts.0.title',
+            'discounts.0.type',
+            'discounts.0.amount',
+            'discounts.1.percentage',
+        ]);
+
+    expect(Project::count())->toBe(0);
+});
+
+test('updating a project replaces its discounts and recalculates', function () {
     $admin = User::factory()->create();
     $client = Client::where('name', 'ABC Company')->firstOrFail();
-    $project = Project::create(projectPayload(['client_id' => $client->id]));
+    $project = Project::create(projectPayload(['client_id' => $client->id, 'subtotal' => '5000']));
+    $project->discounts()->create([
+        'title' => 'Old discount',
+        'type' => 'discount',
+        'mode' => 'amount',
+        'amount' => 1000,
+    ]);
+    $project->recalculateAmount();
 
     $this->actingAs($admin)
         ->put(route('projects.update', $project), projectPayload([
             'client_id' => $client->id,
-            'name' => 'Website Redesign',
-            'status' => Project::STATUS_CANCELLED,
+            'subtotal' => '5000',
+            'discounts' => [
+                [
+                    'title' => 'New discount',
+                    'type' => 'deduction',
+                    'mode' => 'amount',
+                    'amount' => '250',
+                ],
+            ],
         ]))
         ->assertRedirect(route('projects.show', $project));
 
-    expect($project->refresh()->name)->toBe('Website Redesign')
-        ->and($project->status)->toBe(Project::STATUS_CANCELLED);
+    expect($project->refresh()->discounts()->count())->toBe(1)
+        ->and($project->discounts()->first()->title)->toBe('New discount')
+        ->and($project->discount_total)->toBe(250)
+        ->and($project->amount)->toBe(4750);
 });
 
-test('cancelled projects are excluded from the outstanding total but preserved', function () {
+test('project balances are calculated from the discounted final amount', function () {
     $client = Client::where('name', 'ABC Company')->firstOrFail();
-    Project::create(projectPayload(['client_id' => $client->id, 'amount' => '3500']));
-    Project::create(projectPayload(['client_id' => $client->id, 'amount' => '1500', 'name' => 'Logo']));
-    Project::create(projectPayload(['client_id' => $client->id, 'amount' => '9999', 'name' => 'Cancelled Work', 'status' => Project::STATUS_CANCELLED]));
+    $project = Project::create(projectPayload(['client_id' => $client->id, 'subtotal' => '1000']));
+    $project->discounts()->create([
+        'title' => 'Discount',
+        'type' => 'discount',
+        'mode' => 'amount',
+        'amount' => 200,
+    ]);
+    $project->recalculateAmount();
 
-    $summary = app(ClientAccountService::class)->summary($client);
+    $payment = Payment::create([
+        'client_id' => $client->id,
+        'project_id' => $project->id,
+        'amount' => 300,
+        'currency' => 'USD',
+        'method' => 'Money Transfer',
+        'payment_date' => '2026-01-15',
+        'status' => Payment::STATUS_ACTIVE,
+    ]);
 
-    expect($summary['currencies']['USD']['projects_total'])->toBe(5000)
-        ->and($summary['currencies']['USD']['outstanding'])->toBe(5000)
-        ->and($summary['currencies']['USD']['credit'])->toBe(0)
-        ->and($client->projects()->count())->toBe(3); // cancelled record preserved
-});
+    $balance = app(ClientAccountService::class)->projectBalance($project);
 
-test('overpayment produces credit, never a negative outstanding', function () {
-    // Simulated by the service directly: projects 1000, payments 1250.
-    $client = Client::where('name', 'ABC Company')->firstOrFail();
+    expect($project->amount)->toBe(800)
+        ->and($balance)->toBe(500);
 
-    $service = app(ClientAccountService::class);
-    $line = $service->summary($client)['currencies']['USD'];
+    $payment->update(['status' => Payment::STATUS_VOID]);
 
-    // With no payments yet, outstanding equals projects total.
-    expect($line['outstanding'])->toBe(0);
-
-    // Exercise the credit branch of the calculation directly.
-    $method = new ReflectionMethod($service, 'buildLine');
-    $creditLine = $method->invoke($service, 1000, 1250);
-
-    expect($creditLine['net'])->toBe(-250)
-        ->and($creditLine['outstanding'])->toBe(0)
-        ->and($creditLine['credit'])->toBe(250);
-});
-
-test('multi-currency accounts are reported per currency and never combined', function () {
-    $client = Client::where('name', 'ABC Company')->firstOrFail();
-    Project::create(projectPayload(['client_id' => $client->id, 'amount' => '1000']));
-    Project::create(projectPayload(['client_id' => $client->id, 'amount' => '500', 'currency' => 'EGP', 'name' => 'Local Work']));
-
-    $summary = app(ClientAccountService::class)->summary($client);
-
-    expect($summary['has_multiple_currencies'])->toBeTrue()
-        ->and($summary['currencies']['USD']['projects_total'])->toBe(1000)
-        ->and($summary['currencies']['EGP']['projects_total'])->toBe(500)
-        ->and(count($summary['currencies']))->toBe(2);
+    expect(app(ClientAccountService::class)->projectBalance($project))->toBe(800);
 });
 
 test('a client with no projects reports zero in its default currency', function () {

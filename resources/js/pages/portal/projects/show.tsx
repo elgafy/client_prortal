@@ -2,6 +2,7 @@ import { Head, usePage } from '@inertiajs/react';
 import { ExternalLink } from 'lucide-react';
 import CommentThread from '@/components/comments/comment-thread';
 import Heading from '@/components/heading';
+import DiscountList from '@/components/projects/discount-list';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -62,6 +63,41 @@ export default function PortalProjectShow() {
                                     {project.description ?? '—'}
                                 </span>
                             </div>
+                            <Separator />
+                            <div className="flex items-start justify-between gap-4 text-sm">
+                                <span className="text-muted-foreground">
+                                    Subtotal
+                                </span>
+                                <span className="text-right font-medium text-muted-foreground">
+                                    {formatMoney(
+                                        project.subtotal,
+                                        project.currency,
+                                    )}
+                                </span>
+                            </div>
+                            {project.discount_total > 0 && (
+                                <>
+                                    <Separator />
+                                    <div>
+                                        <div className="flex items-start justify-between gap-4 text-sm">
+                                            <span className="text-muted-foreground">
+                                                Discount
+                                            </span>
+                                            <span className="text-right font-medium">
+                                                −
+                                                {formatMoney(
+                                                    project.discount_total,
+                                                    project.currency,
+                                                )}
+                                            </span>
+                                        </div>
+                                        <DiscountList
+                                            discounts={project.discounts ?? []}
+                                            currency={project.currency}
+                                        />
+                                    </div>
+                                </>
+                            )}
                             <Separator />
                             <div className="flex items-start justify-between gap-4 text-sm">
                                 <span className="text-muted-foreground">

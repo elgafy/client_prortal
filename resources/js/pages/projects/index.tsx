@@ -102,6 +102,8 @@ export default function ProjectsIndex() {
                                     <TableHead>Project</TableHead>
                                     <TableHead>Client</TableHead>
                                     <TableHead>Date</TableHead>
+                                    <TableHead>Subtotal</TableHead>
+                                    <TableHead>Discount</TableHead>
                                     <TableHead>Amount</TableHead>
                                     <TableHead>Status</TableHead>
                                 </TableRow>
@@ -125,6 +127,17 @@ export default function ProjectsIndex() {
                                         </TableCell>
                                         <TableCell>
                                             {formatDate(project.project_date)}
+                                        </TableCell>
+                                        <TableCell className="text-muted-foreground">
+                                            {formatMoney(
+                                                project.subtotal,
+                                                project.currency,
+                                            )}
+                                        </TableCell>
+                                        <TableCell className="text-muted-foreground">
+                                            {project.discount_total > 0
+                                                ? `−${formatMoney(project.discount_total, project.currency)}`
+                                                : '—'}
                                         </TableCell>
                                         <TableCell>
                                             {formatMoney(

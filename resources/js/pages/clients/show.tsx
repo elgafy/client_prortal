@@ -234,6 +234,8 @@ export default function ShowClient({
                                     <TableHeader>
                                         <TableRow>
                                             <TableHead>Project</TableHead>
+                                            <TableHead>Subtotal</TableHead>
+                                            <TableHead>Discount</TableHead>
                                             <TableHead>Amount</TableHead>
                                             <TableHead>Status</TableHead>
                                         </TableRow>
@@ -253,6 +255,17 @@ export default function ShowClient({
                                             >
                                                 <TableCell className="font-medium">
                                                     {project.name}
+                                                </TableCell>
+                                                <TableCell className="text-muted-foreground">
+                                                    {formatMoney(
+                                                        project.subtotal,
+                                                        project.currency,
+                                                    )}
+                                                </TableCell>
+                                                <TableCell className="text-muted-foreground">
+                                                    {project.discount_total > 0
+                                                        ? `−${formatMoney(project.discount_total, project.currency)}`
+                                                        : '—'}
                                                 </TableCell>
                                                 <TableCell>
                                                     {formatMoney(

@@ -13,7 +13,9 @@ return new class extends Migration
             $table->foreignId('client_id')->constrained()->restrictOnDelete();
             $table->string('name');
             $table->text('description')->nullable();
-            $table->unsignedBigInteger('amount'); // whole currency units, no decimals
+            $table->unsignedBigInteger('subtotal'); // entered amount, before discounts
+            $table->unsignedBigInteger('discount_total')->default(0); // computed sum of discounts, whole units
+            $table->unsignedBigInteger('amount'); // final amount after discounts
             $table->string('currency', 3);
             $table->date('project_date')->nullable();
             $table->string('status')->default('active'); // active|completed|cancelled

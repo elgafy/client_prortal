@@ -2,6 +2,7 @@ import { Head } from '@inertiajs/react';
 import { Link } from '@inertiajs/react';
 import { ExternalLink, Link2 } from 'lucide-react';
 import Heading from '@/components/heading';
+import DiscountList from '@/components/projects/discount-list';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -75,6 +76,33 @@ export default function ShowProject({ project, balance, payments }: PageProps) {
                             <CardTitle>Project Details</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3">
+                            <InfoRow
+                                label="Subtotal"
+                                value={
+                                    <span className="text-muted-foreground">
+                                        {formatMoney(
+                                            project.subtotal,
+                                            project.currency,
+                                        )}
+                                    </span>
+                                }
+                            />
+                            {project.discount_total > 0 && (
+                                <>
+                                    <Separator />
+                                    <div>
+                                        <InfoRow
+                                            label="Discount"
+                                            value={`−${formatMoney(project.discount_total, project.currency)}`}
+                                        />
+                                        <DiscountList
+                                            discounts={project.discounts ?? []}
+                                            currency={project.currency}
+                                        />
+                                    </div>
+                                </>
+                            )}
+                            <Separator />
                             <InfoRow
                                 label="Amount"
                                 value={formatMoney(

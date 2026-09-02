@@ -1,6 +1,10 @@
 {
-  "permission": {
-    "websearch": "allow",
-    "webfetch": "allow"
-  }
+    "$schema": "https://opencode.ai/config.json",
+    "permission": {
+        "websearch": "allow",
+        "webfetch": "allow"
+    },
+    "tools": {
+        "codesearch": true
+    }
 }

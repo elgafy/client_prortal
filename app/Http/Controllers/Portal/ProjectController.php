@@ -29,7 +29,7 @@ class ProjectController extends PortalController
         abort_unless($project->client_id === $client->id, 404);
 
         return Inertia::render('portal/projects/show', [
-            'project' => $project,
+            'project' => $project->load('discounts.project'),
             'balance' => $this->accounts()->projectBalance($project),
             'payments' => $project->payments()->active()->orderByDesc('payment_date')->get(),
             'comments' => $project->comments()

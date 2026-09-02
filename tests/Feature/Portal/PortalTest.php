@@ -23,7 +23,7 @@ beforeEach(function () {
     Project::create([
         'client_id' => $client->id,
         'name' => 'Website Design',
-        'amount' => 5000,
+        'subtotal' => 5000,
         'currency' => 'USD',
         'status' => Project::STATUS_ACTIVE,
     ]);
@@ -106,7 +106,7 @@ test('a client user cannot view another client\'s project', function () {
     $otherProject = Project::create([
         'client_id' => $otherClient->id,
         'name' => 'Other Work',
-        'amount' => 1000,
+        'subtotal' => 1000,
         'currency' => 'USD',
         'status' => Project::STATUS_ACTIVE,
     ]);
@@ -123,7 +123,7 @@ test('client users cannot write comments on other clients\' records', function (
     $otherProject = Project::create([
         'client_id' => $otherClient->id,
         'name' => 'Other Work',
-        'amount' => 1000,
+        'subtotal' => 1000,
         'currency' => 'USD',
         'status' => Project::STATUS_ACTIVE,
     ]);

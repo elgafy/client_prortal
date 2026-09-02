@@ -1,8 +1,13 @@
 import { Form, Head } from '@inertiajs/react';
 import { Link } from '@inertiajs/react';
+import { useState } from 'react';
 import ProjectController from '@/actions/App/Http/Controllers/ProjectController';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
+import DiscountFields, {
+    discountRowsFrom,
+} from '@/components/projects/discount-fields';
+import type { DiscountRow } from '@/components/projects/discount-fields';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,6 +27,10 @@ type PageProps = {
 };
 
 export default function EditProject({ project, currencies }: PageProps) {
+    const [discounts, setDiscounts] = useState<DiscountRow[]>(
+        discountRowsFrom(project.discounts ?? []),
+    );
+
     return (
         <>
             <Head title={`Edit ${project.name}`} />
@@ -48,17 +57,17 @@ export default function EditProject({ project, currencies }: PageProps) {
 
                             <div className="grid gap-4 sm:grid-cols-3">
                                 <div className="grid gap-2">
-                                    <Label htmlFor="amount">Amount</Label>
+                                    <Label htmlFor="subtotal">Subtotal</Label>
                                     <Input
-                                        id="amount"
-                                        name="amount"
+                                        id="subtotal"
+                                        name="subtotal"
                                         type="number"
                                         step="1"
                                         min="0"
                                         required
-                                        defaultValue={project.amount}
+                                        defaultValue={project.subtotal}
                                     />
-                                    <InputError message={errors.amount} />
+                                    <InputError message={errors.subtotal} />
                                 </div>
 
                                 <div className="grid gap-2">
@@ -139,6 +148,19 @@ export default function EditProject({ project, currencies }: PageProps) {
                                     }
                                 />
                                 <InputError message={errors.description} />
+                            </div>
+
+                            <div className="space-y-3">
+                                <Heading
+                                    variant="small"
+                                    title="Discounts & deductions"
+                                    description="Reduce the final amount — fixed values or percentages of the subtotal"
+                                />
+                                <DiscountFields
+                                    rows={discounts}
+                                    onChange={setDiscounts}
+                                    errors={errors}
+                                />
                             </div>
 
                             <div className="grid gap-2">

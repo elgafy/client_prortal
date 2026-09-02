@@ -4,6 +4,8 @@ import { useState } from 'react';
 import ProjectController from '@/actions/App/Http/Controllers/ProjectController';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
+import DiscountFields from '@/components/projects/discount-fields';
+import type { DiscountRow } from '@/components/projects/discount-fields';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -37,6 +39,7 @@ export default function CreateProject({
     const [currency, setCurrency] = useState<string | undefined>(
         initialClient?.currency ?? currencies[0],
     );
+    const [discounts, setDiscounts] = useState<DiscountRow[]>([]);
 
     // Selecting a client switches the project currency to the client's default.
     const handleClientChange = (value: string) => {
@@ -105,17 +108,17 @@ export default function CreateProject({
 
                             <div className="grid gap-4 sm:grid-cols-3">
                                 <div className="grid gap-2">
-                                    <Label htmlFor="amount">Amount</Label>
+                                    <Label htmlFor="subtotal">Subtotal</Label>
                                     <Input
-                                        id="amount"
-                                        name="amount"
+                                        id="subtotal"
+                                        name="subtotal"
                                         type="number"
                                         step="1"
                                         min="0"
                                         required
                                         placeholder="0"
                                     />
-                                    <InputError message={errors.amount} />
+                                    <InputError message={errors.subtotal} />
                                 </div>
 
                                 <div className="grid gap-2">
@@ -168,6 +171,19 @@ export default function CreateProject({
                                     placeholder="Description (optional)"
                                 />
                                 <InputError message={errors.description} />
+                            </div>
+
+                            <div className="space-y-3">
+                                <Heading
+                                    variant="small"
+                                    title="Discounts & deductions"
+                                    description="Reduce the final amount — fixed values or percentages of the subtotal"
+                                />
+                                <DiscountFields
+                                    rows={discounts}
+                                    onChange={setDiscounts}
+                                    errors={errors}
+                                />
                             </div>
 
                             <div className="grid gap-2">

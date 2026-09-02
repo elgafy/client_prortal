@@ -20,7 +20,7 @@ beforeEach(function () {
     Project::create([
         'client_id' => $client->id,
         'name' => 'Website Design',
-        'amount' => 5000,
+        'subtotal' => 5000,
         'currency' => 'USD',
         'status' => Project::STATUS_ACTIVE,
     ]);

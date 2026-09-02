@@ -22,7 +22,7 @@ beforeEach(function () {
     Project::create([
         'client_id' => $client->id,
         'name' => 'Website Design',
-        'amount' => '5000',
+        'subtotal' => '5000',
         'currency' => 'USD',
         'status' => Project::STATUS_ACTIVE,
     ]);
@@ -103,7 +103,7 @@ test('a payment cannot be assigned to another client\'s project', function () {
     $otherProject = Project::create([
         'client_id' => $otherClient->id,
         'name' => 'Other Work',
-        'amount' => '1000',
+        'subtotal' => '1000',
         'currency' => 'USD',
         'status' => Project::STATUS_ACTIVE,
     ]);
