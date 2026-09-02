@@ -55,6 +55,7 @@ export default function CommentThread({
                                     <Checkbox
                                         id="is_internal"
                                         name="is_internal"
+                                        value="1"
                                         checked={isInternal}
                                         onCheckedChange={(checked) =>
                                             setIsInternal(checked === true)

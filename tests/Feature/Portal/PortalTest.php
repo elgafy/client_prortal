@@ -205,6 +205,35 @@ test('staff can write internal and client-visible comments', function () {
     expect(portalProject()->comments()->count())->toBe(2);
 });
 
+test('staff can mark an internal note on a payment via checkbox value', function () {
+    $staff = User::factory()->staff()->create();
+
+    $payment = Payment::create([
+        'client_id' => portalClient()->id,
+        'project_id' => portalProject()->id,
+        'amount' => 2000,
+        'currency' => 'USD',
+        'payment_date' => now()->toDateString(),
+        'method' => 'Money Transfer',
+        'status' => Payment::STATUS_ACTIVE,
+    ]);
+
+    // "1" is the value the UI checkbox submits when ticked.
+    $this->actingAs($staff)
+        ->post(route('comments.store'), [
+            'commentable_type' => 'payment',
+            'commentable_id' => $payment->id,
+            'body' => 'Verify bank transfer on Monday.',
+            'is_internal' => '1',
+        ])
+        ->assertRedirect();
+
+    $comment = $payment->comments()->firstOrFail();
+
+    expect($comment->body)->toBe('Verify bank transfer on Monday.')
+        ->and($comment->is_internal)->toBeTrue();
+});
+
 test('the portal only shows client-visible comments', function () {
     $staff = User::factory()->staff()->create();
 
