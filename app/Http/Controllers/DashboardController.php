@@ -24,7 +24,8 @@ class DashboardController extends Controller
             'summary' => $this->accounts->globalSummary(),
             'recentProjects' => Project::query()
                 ->with('client:id,name')
-                ->orderByDesc('created_at')
+                ->orderByDesc('project_date')
+                ->orderByDesc('id')
                 ->limit(5)
                 ->get(),
             'recentPayments' => Payment::query()

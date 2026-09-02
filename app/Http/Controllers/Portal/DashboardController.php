@@ -15,7 +15,8 @@ class DashboardController extends PortalController
         return Inertia::render('portal/dashboard', [
             'summary' => $this->accounts()->summary($client),
             'recentProjects' => $client->projects()
-                ->orderByDesc('created_at')
+                ->orderByDesc('project_date')
+                ->orderByDesc('id')
                 ->limit(5)
                 ->get(),
             'recentPayments' => $client->payments()

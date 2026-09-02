@@ -37,7 +37,8 @@ class ProjectController extends Controller
                         });
                 });
             })
-            ->orderByDesc('created_at')
+            ->orderByDesc('project_date')
+            ->orderByDesc('id')
             ->paginate(10)
             ->withQueryString();
 

@@ -15,7 +15,8 @@ class ProjectController extends PortalController
 
         return Inertia::render('portal/projects/index', [
             'projects' => $client->projects()
-                ->orderByDesc('created_at')
+                ->orderByDesc('project_date')
+                ->orderByDesc('id')
                 ->get(),
         ]);
     }

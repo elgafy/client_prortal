@@ -131,7 +131,11 @@ class ClientAccountService
 
         return [
             'summary' => $this->summary($client),
-            'projects' => $client->projects()->orderBy('name')->get(),
+            'projects' => $client->projects()
+                // Chronological for the statement document; undated projects last.
+                ->orderByRaw('project_date IS NULL, project_date')
+                ->orderBy('id')
+                ->get(),
             'payments' => $payments,
             'generatedAt' => now(),
         ];

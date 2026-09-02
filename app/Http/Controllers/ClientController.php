@@ -74,7 +74,10 @@ class ClientController extends Controller
 
         return Inertia::render('clients/show', [
             'client' => $client,
-            'projects' => $client->projects()->orderByDesc('created_at')->get(),
+            'projects' => $client->projects()
+                ->orderByDesc('project_date')
+                ->orderByDesc('id')
+                ->get(),
             'payments' => $client->payments()->with('project:id,name')->orderByDesc('payment_date')->orderByDesc('id')->get(),
             'summary' => $this->accounts->summary($client),
         ]);
