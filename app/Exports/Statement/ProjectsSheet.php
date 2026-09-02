@@ -30,6 +30,8 @@ class ProjectsSheet implements FromArray, ShouldAutoSize, WithHeadings, WithTitl
                 return [
                     $project->name,
                     $project->description,
+                    (int) $project->subtotal,
+                    (int) $project->discount_total,
                     (int) $project->amount,
                     $project->currency,
                     $project->status,
@@ -42,7 +44,7 @@ class ProjectsSheet implements FromArray, ShouldAutoSize, WithHeadings, WithTitl
 
     public function headings(): array
     {
-        return ['Project', 'Description', 'Amount', 'Currency', 'Status', 'Assigned Payments', 'Project Balance'];
+        return ['Project', 'Description', 'Subtotal', 'Discount', 'Amount', 'Currency', 'Status', 'Assigned Payments', 'Project Balance'];
     }
 
     public function title(): string

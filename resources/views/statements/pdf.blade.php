@@ -85,6 +85,8 @@
                         <tr>
                             <th>Project</th>
                             <th>Date</th>
+                            <th class="num">Subtotal</th>
+                            <th class="num">Discount</th>
                             <th class="num">Amount</th>
                         </tr>
                     </thead>
@@ -93,6 +95,8 @@
                             <tr>
                                 <td>{{ $project->name }}</td>
                                 <td>{{ $project->project_date ? \Illuminate\Support\Carbon::parse($project->project_date)->toFormattedDateString() : '—' }}</td>
+                                <td class="num">{{ number_format((float) $project->subtotal) }}</td>
+                                <td class="num">{{ $project->discount_total > 0 ? '-'.number_format((float) $project->discount_total) : '—' }}</td>
                                 <td class="num">{{ number_format((float) $project->amount) }}</td>
                             </tr>
                         @endforeach

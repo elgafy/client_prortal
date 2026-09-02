@@ -140,6 +140,12 @@ export default function ClientStatement() {
                                                                 Date
                                                             </TableHead>
                                                             <TableHead className="text-right">
+                                                                Subtotal
+                                                            </TableHead>
+                                                            <TableHead className="text-right">
+                                                                Discount
+                                                            </TableHead>
+                                                            <TableHead className="text-right">
                                                                 Amount
                                                             </TableHead>
                                                         </TableRow>
@@ -161,6 +167,18 @@ export default function ClientStatement() {
                                                                         {formatDate(
                                                                             project.project_date,
                                                                         )}
+                                                                    </TableCell>
+                                                                    <TableCell className="text-right text-muted-foreground">
+                                                                        {formatMoney(
+                                                                            project.subtotal,
+                                                                            currency,
+                                                                        )}
+                                                                    </TableCell>
+                                                                    <TableCell className="text-right text-muted-foreground">
+                                                                        {project.discount_total >
+                                                                        0
+                                                                            ? `−${formatMoney(project.discount_total, currency)}`
+                                                                            : '—'}
                                                                     </TableCell>
                                                                     <TableCell className="text-right">
                                                                         {formatMoney(
