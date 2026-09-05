@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Client;
+use App\Models\Comment;
 use App\Models\Payment;
 use App\Models\Project;
 use App\Models\User;
@@ -38,10 +39,14 @@ function createClientWithCurrency(string $name, string $currency): Client
 
 test('client-role users cannot access project management', function () {
     $clientUser = User::factory()->forClient(null)->create();
+    $project = Project::create(projectPayload(['client_id' => createClientWithCurrency('XYZ Ltd', 'USD')->id]));
 
     $this->actingAs($clientUser)->get(route('projects.index'))->assertRedirect(route('portal.dashboard'));
     $this->actingAs($clientUser)->get(route('projects.create'))->assertRedirect(route('portal.dashboard'));
     $this->actingAs($clientUser)->post(route('projects.store'), projectPayload())->assertRedirect(route('portal.dashboard'));
+    $this->actingAs($clientUser)->delete(route('projects.destroy', $project))->assertRedirect(route('portal.dashboard'));
+
+    expect($project->exists())->toBeTrue();
 });
 
 test('an administrator can create a project for a client', function () {
@@ -208,6 +213,59 @@ test('updating a project replaces its discounts and recalculates', function () {
         ->and($project->discounts()->first()->title)->toBe('New discount')
         ->and($project->discount_total)->toBe(250)
         ->and($project->amount)->toBe(4750);
+});
+
+test('an administrator can delete a project along with its comments', function () {
+    $admin = User::factory()->create();
+    $client = Client::where('name', 'ABC Company')->firstOrFail();
+    $project = Project::create(projectPayload(['client_id' => $client->id]));
+    Comment::create([
+        'user_id' => $admin->id,
+        'commentable_type' => Project::class,
+        'commentable_id' => $project->id,
+        'body' => 'Internal note',
+        'is_internal' => true,
+    ]);
+
+    $this->actingAs($admin)
+        ->delete(route('projects.destroy', $project))
+        ->assertRedirect(route('projects.index'));
+
+    expect(Project::count())->toBe(0)
+        ->and(Comment::count())->toBe(0);
+});
+
+test('deleting a project keeps its payments as account payments', function () {
+    $admin = User::factory()->create();
+    $client = Client::where('name', 'ABC Company')->firstOrFail();
+    $project = Project::create(projectPayload(['client_id' => $client->id, 'subtotal' => '1000']));
+    $payment = Payment::create([
+        'client_id' => $client->id,
+        'project_id' => $project->id,
+        'amount' => 400,
+        'currency' => 'USD',
+        'payment_date' => '2026-01-15',
+        'method' => 'Money Transfer',
+        'status' => Payment::STATUS_ACTIVE,
+    ]);
+
+    $this->actingAs($admin)
+        ->delete(route('projects.destroy', $project))
+        ->assertRedirect(route('projects.index'));
+
+    $payment->refresh();
+
+    expect(Project::count())->toBe(0)
+        ->and($payment->exists())->toBeTrue()
+        ->and($payment->status)->toBe(Payment::STATUS_ACTIVE)
+        ->and($payment->project_id)->toBeNull();
+
+    // The payment still counts toward the client account (as unassigned).
+    $summary = app(ClientAccountService::class)->summary($client);
+
+    expect($summary['currencies']['USD']['payments_total'])->toBe(400)
+        ->and($summary['currencies']['USD']['outstanding'])->toBe(0)
+        ->and($summary['currencies']['USD']['credit'])->toBe(400);
 });
 
 test('project balances are calculated from the discounted final amount', function () {

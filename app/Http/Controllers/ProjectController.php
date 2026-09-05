@@ -115,6 +115,24 @@ class ProjectController extends Controller
     }
 
     /**
+     * Delete a project. Assigned payments survive as unassigned account
+     * payments (payments are never deleted, PRD §51); comments are removed.
+     */
+    public function destroy(Project $project): RedirectResponse
+    {
+        $this->authorize('delete', $project);
+
+        DB::transaction(function () use ($project): void {
+            $project->comments()->delete();
+            $project->delete();
+        });
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Project deleted.')]);
+
+        return to_route('projects.index');
+    }
+
+    /**
      * The validated project fields — discounts are handled separately and
      * `amount` is always derived, never accepted from the client.
      *

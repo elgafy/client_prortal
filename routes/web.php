@@ -23,7 +23,7 @@ Route::middleware(['auth', 'verified', 'internal'])->group(function () {
     Route::patch('clients/{client}/archive', [ClientController::class, 'archive'])->name('clients.archive');
     Route::post('clients/{client}/invite', [ClientController::class, 'invite'])->name('clients.invite');
 
-    Route::resource('projects', ProjectController::class)->except(['destroy']);
+    Route::resource('projects', ProjectController::class);
 
     Route::resource('payments', PaymentController::class)->except(['destroy']);
     Route::patch('payments/{payment}/void', [PaymentController::class, 'void'])->name('payments.void');

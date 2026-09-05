@@ -93,7 +93,12 @@
                     <tbody>
                         @foreach ($currencyProjects as $project)
                             <tr>
-                                <td>{{ $project->name }}</td>
+                                <td>
+                                    {{ $project->name }}
+                                    @if ($project->description)
+                                        <div style="color: #777; font-size: 11px;">{{ $project->description }}</div>
+                                    @endif
+                                </td>
                                 <td>{{ $project->project_date ? \Illuminate\Support\Carbon::parse($project->project_date)->toFormattedDateString() : '—' }}</td>
                                 <td class="num">{{ number_format((float) $project->subtotal) }}</td>
                                 <td class="num">{{ $project->discount_total > 0 ? '-'.number_format((float) $project->discount_total) : '—' }}</td>

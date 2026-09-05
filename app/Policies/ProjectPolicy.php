@@ -29,4 +29,9 @@ class ProjectPolicy
     {
         return $user->isInternal();
     }
+
+    public function delete(User $user, Project $project): bool
+    {
+        return $user->isInternal();
+    }
 }

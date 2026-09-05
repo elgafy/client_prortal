@@ -1,6 +1,7 @@
-import { Head } from '@inertiajs/react';
+import { Form, Head } from '@inertiajs/react';
 import { Link } from '@inertiajs/react';
 import { ExternalLink, Link2 } from 'lucide-react';
+import ProjectController from '@/actions/App/Http/Controllers/ProjectController';
 import Heading from '@/components/heading';
 import DiscountList from '@/components/projects/discount-list';
 import { Badge } from '@/components/ui/badge';
@@ -65,9 +66,29 @@ export default function ShowProject({ project, balance, payments }: PageProps) {
                         </p>
                     </div>
 
-                    <Button asChild>
-                        <Link href={projectsEdit(project.id)}>Edit</Link>
-                    </Button>
+                    <div className="flex gap-2">
+                        <Form
+                            {...ProjectController.destroy.form(project.id)}
+                            onBefore={() =>
+                                confirm(
+                                    'Delete this project? Payments assigned to it will remain on the account as unassigned payments.',
+                                )
+                            }
+                        >
+                            {({ processing }) => (
+                                <Button
+                                    type="submit"
+                                    variant="destructive"
+                                    disabled={processing}
+                                >
+                                    Delete
+                                </Button>
+                            )}
+                        </Form>
+                        <Button asChild>
+                            <Link href={projectsEdit(project.id)}>Edit</Link>
+                        </Button>
+                    </div>
                 </div>
 
                 <div className="grid gap-6 lg:grid-cols-3">
