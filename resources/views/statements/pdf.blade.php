@@ -93,7 +93,7 @@
                     <tbody>
                         @foreach ($currencyProjects as $project)
                             <tr>
-                                <td>
+                                <td style="width: 360px; background-color: #000000;">
                                     {{ $project->name }}
                                     @if ($project->description)
                                         <div style="color: #777; font-size: 11px;">{{ $project->description }}</div>
