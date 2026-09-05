@@ -13,9 +13,10 @@
         .meta table { width: 100%; }
         .meta td { padding: 2px 0; vertical-align: top; }
         .meta .label { color: #777; width: 160px; }
-        h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #ccc; padding-bottom: 4px; margin: 24px 0 10px; }
+        h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #ccc; padding-bottom: 4px; margin: 24px 0 10px; }
         table.items { width: 100%; border-collapse: collapse; }
-        table.items th { text-align: left; font-size: 11px; text-transform: uppercase; color: #777; border-bottom: 1px solid #ccc; padding: 6px 8px; }
+        /* table header */
+        table.items th { text-align: left; font-size: 10px; text-transform: uppercase; color: #777; border-bottom: 1px solid #ccc; padding: 6px 8px; }
         table.items td { padding: 6px 8px; border-bottom: 1px solid #eee; }
         table.items td.num, table.items th.num { text-align: right; }
         table.totals { width: 45%; border-collapse: collapse; margin-top: 12px; margin-left: auto; }
@@ -23,7 +24,7 @@
         table.totals td.num { text-align: right; font-weight: bold; }
         table.totals tr.grand td { border-top: 2px solid #1a1a1a; font-weight: bold; }
         .currency-section { margin-bottom: 8px; }
-        .currency-label { font-size: 11px; color: #777; margin-bottom: 6px; }
+        .currency-label { font-size: 10px; color: #777; margin-bottom: 6px; }
         .footer { margin-top: 30px; border-top: 1px solid #ccc; padding-top: 8px; font-size: 10px; color: #999; }
     </style>
 </head>
@@ -93,10 +94,10 @@
                     <tbody>
                         @foreach ($currencyProjects as $project)
                             <tr>
-                                <td style="width: 360px; background-color: #000000;">
+                                <td style="width: 360px;">
                                     {{ $project->name }}
                                     @if ($project->description)
-                                        <div style="color: #777; font-size: 11px;">{{ $project->description }}</div>
+                                        <div style="color: #777; font-size: 10px;">{{ $project->description }}</div>
                                     @endif
                                 </td>
                                 <td>{{ $project->project_date ? \Illuminate\Support\Carbon::parse($project->project_date)->toFormattedDateString() : '—' }}</td>
