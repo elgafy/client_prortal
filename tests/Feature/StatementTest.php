@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Client;
+use App\Models\Comment;
 use App\Models\Payment;
 use App\Models\Project;
 use App\Models\User;
@@ -95,6 +96,66 @@ test('administrators can download the statement as Excel', function () {
 
     $response->assertOk();
     expect($response->headers->get('content-type'))->toContain('spreadsheetml');
+});
+
+test('the Excel projects sheet shows dates and discount details without times', function () {
+    $admin = User::factory()->create();
+    $client = statementClient();
+
+    $project = Project::create([
+        'client_id' => $client->id,
+        'name' => 'Discounted Work',
+        'subtotal' => 1000,
+        'currency' => 'USD',
+        'project_date' => '2026-03-05',
+        'status' => Project::STATUS_ACTIVE,
+    ]);
+    $project->discounts()->create([
+        'title' => 'Early payment',
+        'type' => 'discount',
+        'mode' => 'amount',
+        'amount' => 200,
+    ]);
+    $project->recalculateAmount();
+
+    $payment = Payment::where('client_id', $client->id)->firstOrFail();
+    Comment::create([
+        'user_id' => $admin->id,
+        'commentable_type' => Payment::class,
+        'commentable_id' => $payment->id,
+        'body' => 'Client asked about the invoice',
+        'is_internal' => false,
+    ]);
+    Comment::create([
+        'user_id' => $admin->id,
+        'commentable_type' => Payment::class,
+        'commentable_id' => $payment->id,
+        'body' => 'Internal: verify bank transfer',
+        'is_internal' => true,
+    ]);
+
+    $response = $this->actingAs($admin)
+        ->get(route('clients.statement.excel', $client));
+
+    $response->assertOk();
+
+    $zip = new ZipArchive;
+    $zip->open($response->getFile()->getPathname());
+    $shared = (string) $zip->getFromName('xl/sharedStrings.xml');
+    $zip->close();
+
+    // Dates render as date-only strings, never datetimes.
+    expect($shared)->toContain('Mar 5, 2026')
+        ->and($shared)->toContain('Jan 10, 2026')
+        ->and($shared)->not->toContain('00:00')
+        // Discount cell: total plus each row's data in the same cell.
+        ->and($shared)->toContain('-200 (Early payment: -200)')
+        // Payments sheet: Received From (not Received By) + client-visible comments only.
+        ->and($shared)->toContain('Received From')
+        ->and($shared)->not->toContain('Received By')
+        ->and($shared)->toContain('Client asked about the invoice')
+        ->and($shared)->not->toContain('Verify bank transfer')
+        ->and($shared)->not->toContain('Internal note');
 });
 
 test('client users can view and export their own statement', function () {

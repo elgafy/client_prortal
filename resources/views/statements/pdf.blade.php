@@ -119,6 +119,7 @@
                         <tr>
                             <th>Date</th>
                             <th>Method</th>
+                            <th>Received from</th>
                             <th>Project</th>
                             <th class="num">Amount</th>
                         </tr>
@@ -128,6 +129,7 @@
                             <tr>
                                 <td>{{ \Illuminate\Support\Carbon::parse($payment->payment_date)->toFormattedDateString() }}</td>
                                 <td>{{ $payment->method }}</td>
+                                <td>{{ $payment->received_from ?? '—' }}</td>
                                 <td>{{ $payment->project?->name ?? '—' }}</td>
                                 <td class="num">{{ number_format((float) $payment->amount) }}</td>
                             </tr>

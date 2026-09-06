@@ -125,16 +125,16 @@ class ClientAccountService
             ->with('project:id,name')
             ->when($from, fn ($query) => $query->whereDate('payment_date', '>=', $from))
             ->when($to, fn ($query) => $query->whereDate('payment_date', '<=', $to))
-            ->orderBy('payment_date')
-            ->orderBy('id')
+            ->orderByDesc('payment_date')
+            ->orderByDesc('id')
             ->get();
 
         return [
             'summary' => $this->summary($client),
             'projects' => $client->projects()
-                // Chronological for the statement document; undated projects last.
-                ->orderByRaw('project_date IS NULL, project_date')
-                ->orderBy('id')
+                // Newest first; undated projects last.
+                ->orderByRaw('project_date IS NULL, project_date DESC')
+                ->orderByDesc('id')
                 ->get(),
             'payments' => $payments,
             'generatedAt' => now(),
