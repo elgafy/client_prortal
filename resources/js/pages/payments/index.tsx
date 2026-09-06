@@ -94,6 +94,7 @@ export default function PaymentsIndex() {
                                     <TableHead>Client</TableHead>
                                     <TableHead>Amount</TableHead>
                                     <TableHead>Method</TableHead>
+                                    <TableHead>Received from</TableHead>
                                     <TableHead>Project</TableHead>
                                     <TableHead>Status</TableHead>
                                 </TableRow>
@@ -122,6 +123,9 @@ export default function PaymentsIndex() {
                                             )}
                                         </TableCell>
                                         <TableCell>{payment.method}</TableCell>
+                                        <TableCell className="text-muted-foreground">
+                                            {payment.received_from ?? '—'}
+                                        </TableCell>
                                         <TableCell>
                                             {payment.project?.name ??
                                                 'Account payment'}

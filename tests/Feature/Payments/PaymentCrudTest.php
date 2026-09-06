@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Client;
+use App\Models\Comment;
 use App\Models\Payment;
 use App\Models\Project;
 use App\Models\User;
@@ -173,7 +174,7 @@ test('overpayment becomes client credit, never a negative outstanding', function
         ->and($summary['credit'])->toBe(1000);
 });
 
-test('an administrator can void a payment but not delete it', function () {
+test('an administrator can void a payment', function () {
     $admin = User::factory()->create();
     $payment = Payment::create(paymentPayload());
 
@@ -187,6 +188,52 @@ test('an administrator can void a payment but not delete it', function () {
     $this->actingAs($admin)
         ->patch(route('payments.void', $payment))
         ->assertForbidden();
+});
+
+test('an administrator can permanently delete a payment and its comments', function () {
+    $admin = User::factory()->create();
+    $payment = Payment::create(paymentPayload());
+    Comment::create([
+        'user_id' => $admin->id,
+        'commentable_type' => Payment::class,
+        'commentable_id' => $payment->id,
+        'body' => 'Internal note',
+        'is_internal' => true,
+    ]);
+
+    $this->actingAs($admin)
+        ->delete(route('payments.destroy', $payment))
+        ->assertRedirect(route('payments.index'));
+
+    expect(Payment::count())->toBe(0)
+        ->and(Comment::count())->toBe(0);
+});
+
+test('deleting a payment removes it from all balances', function () {
+    $admin = User::factory()->create();
+    $client = testClient();
+    $payment = Payment::create(paymentPayload(['amount' => '2000']));
+
+    $service = app(ClientAccountService::class);
+    expect($service->summary($client)['currencies']['USD']['payments_total'])->toBe(2000);
+
+    $this->actingAs($admin)
+        ->delete(route('payments.destroy', $payment))
+        ->assertRedirect(route('payments.index'));
+
+    expect($service->summary($client)['currencies']['USD']['payments_total'])->toBe(0)
+        ->and($service->projectBalance(testProject()))->toBe(5000);
+});
+
+test('client-role users cannot delete payments', function () {
+    $clientUser = User::factory()->forClient(null)->create();
+    $payment = Payment::create(paymentPayload());
+
+    $this->actingAs($clientUser)
+        ->delete(route('payments.destroy', $payment))
+        ->assertRedirect(route('portal.dashboard'));
+
+    expect($payment->exists())->toBeTrue();
 });
 
 test('payments appear in the global history list', function () {

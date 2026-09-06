@@ -34,4 +34,9 @@ class PaymentPolicy
     {
         return $user->isInternal() && $payment->status === Payment::STATUS_ACTIVE;
     }
+
+    public function delete(User $user, Payment $payment): bool
+    {
+        return $user->isInternal();
+    }
 }

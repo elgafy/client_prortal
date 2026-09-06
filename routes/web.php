@@ -25,7 +25,7 @@ Route::middleware(['auth', 'verified', 'internal'])->group(function () {
 
     Route::resource('projects', ProjectController::class);
 
-    Route::resource('payments', PaymentController::class)->except(['destroy']);
+    Route::resource('payments', PaymentController::class);
     Route::patch('payments/{payment}/void', [PaymentController::class, 'void'])->name('payments.void');
 
     Route::get('clients/{client}/statement', [StatementController::class, 'show'])->name('clients.statement');

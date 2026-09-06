@@ -11,6 +11,7 @@ use App\Models\Project;
 use App\Models\Setting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -121,5 +122,23 @@ class PaymentController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Payment voided.')]);
 
         return to_route('payments.show', $payment);
+    }
+
+    /**
+     * Permanently delete a payment and its comments. Unlike voiding, the
+     * record is removed entirely and balances are recalculated without it.
+     */
+    public function destroy(Payment $payment): RedirectResponse
+    {
+        $this->authorize('delete', $payment);
+
+        DB::transaction(function () use ($payment): void {
+            $payment->comments()->delete();
+            $payment->delete();
+        });
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Payment deleted.')]);
+
+        return to_route('payments.index');
     }
 }

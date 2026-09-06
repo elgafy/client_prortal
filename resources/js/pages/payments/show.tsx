@@ -66,6 +66,24 @@ export default function ShowPayment({ payment, comments }: PageProps) {
                                 )}
                             </Form>
                         )}
+                        <Form
+                            {...PaymentController.destroy.form(payment.id)}
+                            onBefore={() =>
+                                confirm(
+                                    'Permanently delete this payment? Balances will be recalculated without it. This cannot be undone.',
+                                )
+                            }
+                        >
+                            {({ processing }) => (
+                                <Button
+                                    type="submit"
+                                    variant="destructive"
+                                    disabled={processing}
+                                >
+                                    Delete
+                                </Button>
+                            )}
+                        </Form>
                         <Button asChild>
                             <Link href={paymentsEdit(payment.id)}>Edit</Link>
                         </Button>
