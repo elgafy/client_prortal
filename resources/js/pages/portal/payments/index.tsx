@@ -39,9 +39,10 @@ export default function PortalPayments() {
                                 <TableRow>
                                     <TableHead>Date</TableHead>
                                     <TableHead>Amount</TableHead>
-                                    <TableHead>Currency</TableHead>
                                     <TableHead>Method</TableHead>
+                                    <TableHead>Received from</TableHead>
                                     <TableHead>Project</TableHead>
+                                    <TableHead>Notes</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -64,12 +65,15 @@ export default function PortalPayments() {
                                                 payment.currency,
                                             )}
                                         </TableCell>
-                                        <TableCell>
-                                            {payment.currency}
-                                        </TableCell>
                                         <TableCell>{payment.method}</TableCell>
+                                        <TableCell className="text-muted-foreground">
+                                            {payment.received_from ?? '—'}
+                                        </TableCell>
                                         <TableCell>
                                             {payment.project?.name ?? '—'}
+                                        </TableCell>
+                                        <TableCell className="max-w-64 truncate text-muted-foreground">
+                                            {payment.note ?? '—'}
                                         </TableCell>
                                     </TableRow>
                                 ))}

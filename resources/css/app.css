@@ -168,3 +168,12 @@
         @apply bg-background text-foreground;
     }
 }
+
+@layer components {
+    /* Subtle zebra striping on every data table — a mode-adaptive tint:
+       a touch of ink over the cream canvas in light mode, a touch of
+       white over the dark teal surface in dark mode. */
+    [data-slot='table-body'] > [data-slot='table-row']:nth-child(even) {
+        background-color: color-mix(in srgb, var(--foreground) 4%, transparent);
+    }
+}

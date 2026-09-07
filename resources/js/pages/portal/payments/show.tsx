@@ -76,6 +76,17 @@ export default function PortalPaymentShow() {
                             label="Date"
                             value={formatDate(payment.payment_date)}
                         />
+                        <Separator />
+                        <InfoRow
+                            label="Received from"
+                            value={payment.received_from ?? '—'}
+                        />
+                        {payment.note && (
+                            <>
+                                <Separator />
+                                <InfoRow label="Note" value={payment.note} />
+                            </>
+                        )}
                     </CardContent>
                 </Card>
 

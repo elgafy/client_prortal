@@ -59,6 +59,32 @@ export default function PortalStatement() {
                     </div>
                 </div>
 
+                <div className="flex flex-wrap gap-3">
+                    {Object.entries(statement.summary.currencies).map(
+                        ([currency, line]) => (
+                            <div
+                                key={currency}
+                                className="flex min-w-44 flex-1 flex-col gap-0.5 rounded-xl border p-4 sm:max-w-64"
+                            >
+                                <span className="text-sm text-muted-foreground">
+                                    {line.credit !== 0
+                                        ? 'Credit'
+                                        : 'Outstanding'}{' '}
+                                    ({currency})
+                                </span>
+                                <span className="text-2xl font-semibold tracking-tight">
+                                    {formatMoney(
+                                        line.credit !== 0
+                                            ? line.credit
+                                            : line.outstanding,
+                                        currency,
+                                    )}
+                                </span>
+                            </div>
+                        ),
+                    )}
+                </div>
+
                 {statement.summary.has_multiple_currencies && (
                     <div className="rounded-xl border border-brand-ochre/50 bg-brand-ochre/10 p-3 text-sm">
                         This account uses multiple currencies. Sections are
